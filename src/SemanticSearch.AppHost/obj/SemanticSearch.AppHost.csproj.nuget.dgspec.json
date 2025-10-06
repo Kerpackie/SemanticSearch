@@ -1,0 +1,88 @@
+{
+  "format": 1,
+  "restore": {
+    "/Users/kerpackie/RiderProjects/SemanticSearch/src/SemanticSearch.AppHost/SemanticSearch.AppHost.csproj": {}
+  },
+  "projects": {
+    "/Users/kerpackie/RiderProjects/SemanticSearch/src/SemanticSearch.AppHost/SemanticSearch.AppHost.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/kerpackie/RiderProjects/SemanticSearch/src/SemanticSearch.AppHost/SemanticSearch.AppHost.csproj",
+        "projectName": "SemanticSearch.AppHost",
+        "projectPath": "/Users/kerpackie/RiderProjects/SemanticSearch/src/SemanticSearch.AppHost/SemanticSearch.AppHost.csproj",
+        "packagesPath": "/Users/kerpackie/.nuget/packages/",
+        "outputPath": "/Users/kerpackie/RiderProjects/SemanticSearch/src/SemanticSearch.AppHost/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/kerpackie/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "/opt/homebrew/Cellar/dotnet/9.0.6/libexec/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.100"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "Aspire.Dashboard.Sdk.osx-arm64": {
+              "target": "Package",
+              "version": "[9.5.1, )",
+              "autoReferenced": true
+            },
+            "Aspire.Hosting.AppHost": {
+              "target": "Package",
+              "version": "[9.5.1, )"
+            },
+            "Aspire.Hosting.Orchestration.osx-arm64": {
+              "target": "Package",
+              "version": "[9.5.1, )",
+              "autoReferenced": true
+            },
+            "Aspire.Hosting.Redis": {
+              "target": "Package",
+              "version": "[9.5.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/9.0.6/libexec/sdk/9.0.107/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

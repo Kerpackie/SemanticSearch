@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticSearch.AppHost", "src\SemanticSearch.AppHost\SemanticSearch.AppHost.csproj", "{824EC059-E847-4500-A2EE-2126CEB575D2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticSearch.ServiceDefaults", "src\SemanticSearch.ServiceDefaults\SemanticSearch.ServiceDefaults.csproj", "{65D08FC5-C82F-4734-9419-B9CA00CC8EE5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticSearch.ApiService", "src\SemanticSearch.ApiService\SemanticSearch.ApiService.csproj", "{D384E54F-D156-4CC9-A57E-FA9410ECFDBF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticSearch.Web", "src\SemanticSearch.Web\SemanticSearch.Web.csproj", "{B55E0AD1-E988-48E7-80BE-4528C1240648}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{824EC059-E847-4500-A2EE-2126CEB575D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{824EC059-E847-4500-A2EE-2126CEB575D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{824EC059-E847-4500-A2EE-2126CEB575D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{824EC059-E847-4500-A2EE-2126CEB575D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65D08FC5-C82F-4734-9419-B9CA00CC8EE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65D08FC5-C82F-4734-9419-B9CA00CC8EE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65D08FC5-C82F-4734-9419-B9CA00CC8EE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65D08FC5-C82F-4734-9419-B9CA00CC8EE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D384E54F-D156-4CC9-A57E-FA9410ECFDBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D384E54F-D156-4CC9-A57E-FA9410ECFDBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D384E54F-D156-4CC9-A57E-FA9410ECFDBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D384E54F-D156-4CC9-A57E-FA9410ECFDBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B55E0AD1-E988-48E7-80BE-4528C1240648}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B55E0AD1-E988-48E7-80BE-4528C1240648}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B55E0AD1-E988-48E7-80BE-4528C1240648}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B55E0AD1-E988-48E7-80BE-4528C1240648}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
