@@ -148,6 +148,46 @@
           "buildMultiTargeting/Aspire.Hosting.Orchestration.osx-arm64.targets": {}
         }
       },
+      "Aspire.Hosting.Qdrant/9.5.1": {
+        "type": "package",
+        "dependencies": {
+          "AspNetCore.HealthChecks.Uris": "9.0.0",
+          "Aspire.Hosting": "9.5.1",
+          "Google.Protobuf": "3.32.0",
+          "Grpc.AspNetCore": "2.71.0",
+          "Grpc.Net.ClientFactory": "2.71.0",
+          "Grpc.Tools": "2.72.0",
+          "Humanizer.Core": "2.14.1",
+          "JsonPatch.Net": "3.3.0",
+          "KubernetesClient": "17.0.14",
+          "Microsoft.Extensions.Configuration.Abstractions": "8.0.0",
+          "Microsoft.Extensions.Configuration.Binder": "8.0.2",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2",
+          "Microsoft.Extensions.Diagnostics.HealthChecks": "8.0.20",
+          "Microsoft.Extensions.Hosting": "8.0.1",
+          "Microsoft.Extensions.Hosting.Abstractions": "8.0.1",
+          "Microsoft.Extensions.Http": "8.0.1",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
+          "Microsoft.Extensions.Options": "8.0.2",
+          "Microsoft.Extensions.Primitives": "8.0.0",
+          "Newtonsoft.Json": "13.0.3",
+          "Polly.Core": "8.6.3",
+          "Qdrant.Client": "1.15.1",
+          "Semver": "3.0.0",
+          "StreamJsonRpc": "2.22.11",
+          "System.IO.Hashing": "9.0.8"
+        },
+        "compile": {
+          "lib/net8.0/Aspire.Hosting.Qdrant.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Aspire.Hosting.Qdrant.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Aspire.Hosting.Redis/9.5.1": {
         "type": "package",
         "dependencies": {
@@ -1293,6 +1333,23 @@
           }
         }
       },
+      "Qdrant.Client/1.15.1": {
+        "type": "package",
+        "dependencies": {
+          "Google.Protobuf": "3.31.0",
+          "Grpc.Net.Client": "2.71.0"
+        },
+        "compile": {
+          "lib/net6.0/Qdrant.Client.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/Qdrant.Client.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
       "Semver/3.0.0": {
         "type": "package",
         "dependencies": {
@@ -1674,6 +1731,22 @@
         "tools/dcp",
         "tools/ext/bin/dcpproc",
         "tools/ext/dcpctrl"
+      ]
+    },
+    "Aspire.Hosting.Qdrant/9.5.1": {
+      "sha512": "ycz8Lhwk5rbPq6xqWJ5YzIZ41giUGXJYEvJlQxrxVZA4OwBNVunQw0o6Z4dYaJKs6JDIKPsHqya/HZIz84xxGg==",
+      "type": "package",
+      "path": "aspire.hosting.qdrant/9.5.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "README.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "aspire.hosting.qdrant.9.5.1.nupkg.sha512",
+        "aspire.hosting.qdrant.nuspec",
+        "lib/net8.0/Aspire.Hosting.Qdrant.dll",
+        "lib/net8.0/Aspire.Hosting.Qdrant.xml"
       ]
     },
     "Aspire.Hosting.Redis/9.5.1": {
@@ -3269,6 +3342,29 @@
         "polly.core.nuspec"
       ]
     },
+    "Qdrant.Client/1.15.1": {
+      "sha512": "sSfZ3Hb12hL9jaTRWIuus2OB3l47O2NwoxeRCX3AginukE8iydRuzUWGLo6VrQ+O49CU8i5bN9VJMZq5T56WkQ==",
+      "type": "package",
+      "path": "qdrant.client/1.15.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "README.md",
+        "lib/net462/Qdrant.Client.dll",
+        "lib/net462/Qdrant.Client.pdb",
+        "lib/net462/Qdrant.Client.xml",
+        "lib/net6.0/Qdrant.Client.dll",
+        "lib/net6.0/Qdrant.Client.pdb",
+        "lib/net6.0/Qdrant.Client.xml",
+        "lib/netstandard2.0/Qdrant.Client.dll",
+        "lib/netstandard2.0/Qdrant.Client.pdb",
+        "lib/netstandard2.0/Qdrant.Client.xml",
+        "nuget-icon.png",
+        "qdrant.client.1.15.1.nupkg.sha512",
+        "qdrant.client.nuspec"
+      ]
+    },
     "Semver/3.0.0": {
       "sha512": "9jZCicsVgTebqkAujRWtC9J1A5EQVlu0TVKHcgoCuv345ve5DYf4D1MjhKEnQjdRZo6x/vdv6QQrYFs7ilGzLA==",
       "type": "package",
@@ -3492,6 +3588,7 @@
       "Aspire.Dashboard.Sdk.osx-arm64 >= 9.5.1",
       "Aspire.Hosting.AppHost >= 9.5.1",
       "Aspire.Hosting.Orchestration.osx-arm64 >= 9.5.1",
+      "Aspire.Hosting.Qdrant >= 9.5.1",
       "Aspire.Hosting.Redis >= 9.5.1"
     ]
   },
@@ -3552,6 +3649,10 @@
             "target": "Package",
             "version": "[9.5.1, )",
             "autoReferenced": true
+          },
+          "Aspire.Hosting.Qdrant": {
+            "target": "Package",
+            "version": "[9.5.1, )"
           },
           "Aspire.Hosting.Redis": {
             "target": "Package",

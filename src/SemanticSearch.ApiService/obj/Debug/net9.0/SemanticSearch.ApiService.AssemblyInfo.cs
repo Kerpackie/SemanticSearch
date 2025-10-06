@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SemanticSearch.ApiService")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+48b6b0959b59954961e6dced8c7f1936f9ba94af")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a033e062e5f86027ae5d2a310db33773707ddb41")]
 [assembly: System.Reflection.AssemblyProductAttribute("SemanticSearch.ApiService")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SemanticSearch.ApiService")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
