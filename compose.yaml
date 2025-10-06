@@ -1,0 +1,7 @@
+﻿services:
+  mneme.api:
+    image: mneme.api
+    build:
+      context: .
+      dockerfile: src/Mneme/Mneme.Api/Dockerfile
+
