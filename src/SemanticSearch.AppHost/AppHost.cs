@@ -1,12 +1,17 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
+
 var qdrant = builder.AddQdrant("qdrant")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume(); // or .WithDataBindMount("C:\\Qdrant\\Data")
 
-builder.AddProject<Projects.Mneme_Api>("mneme-api")
+var mnemeApi = builder.AddProject<Projects.Mneme_Api>("mneme-api")
     .WithReference(qdrant)
     .WaitFor(qdrant);
+
+builder.AddProject<Projects.MnemeTester>("mneme-tester")
+    .WithReference(mnemeApi)
+    .WaitFor(mnemeApi);
 
 var cache = builder.AddRedis("cache");
 

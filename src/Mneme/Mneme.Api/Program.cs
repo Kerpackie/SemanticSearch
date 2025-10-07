@@ -1,3 +1,4 @@
+using Mneme.Api;
 using Mneme.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,7 @@ app.MapDefaultEndpoints();
 
 // gRPC service + gRPC health service
 app.MapGrpcService<GreeterService>();
+app.MapGrpcService<ProductSearchService>();
 app.MapGrpcHealthChecksService();
 
 app.MapGet("/",

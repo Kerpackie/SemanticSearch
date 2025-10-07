@@ -12,6 +12,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Mneme\Mneme.Api\Mneme.Api.csproj" />
+        <ProjectReference Include="..\R&amp;D\MnemeTester\MnemeTester.csproj" />
         <ProjectReference Include="..\SemanticSearch.ApiService\SemanticSearch.ApiService.csproj"/>
         <ProjectReference Include="..\SemanticSearch.Web\SemanticSearch.Web.csproj"/>
     </ItemGroup>
