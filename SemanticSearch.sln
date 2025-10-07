@@ -8,6 +8,19 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticSearch.ApiService",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticSearch.Web", "src\SemanticSearch.Web\SemanticSearch.Web.csproj", "{B55E0AD1-E988-48E7-80BE-4528C1240648}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mneme", "Mneme", "{87D99827-D83D-4C4F-A4E8-31A15A5FE835}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mneme.Api", "src\Mneme\Mneme.Api\Mneme.Api.csproj", "{0DB048A5-6066-4D57-A0E0-A19B8F8E7A74}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{06AA99BB-991B-4AA2-9561-A3DB155A485C}"
+	ProjectSection(SolutionItems) = preProject
+		compose.yaml = compose.yaml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "R&D", "R&D", "{E4797B4C-EE73-40E0-8A49-F49CE142ABDC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MnemeTester", "src\R&D\MnemeTester\MnemeTester.csproj", "{B9FF6F21-B038-4F41-A2C1-079494CBC9BC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +43,17 @@ Global
 		{B55E0AD1-E988-48E7-80BE-4528C1240648}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B55E0AD1-E988-48E7-80BE-4528C1240648}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B55E0AD1-E988-48E7-80BE-4528C1240648}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0DB048A5-6066-4D57-A0E0-A19B8F8E7A74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DB048A5-6066-4D57-A0E0-A19B8F8E7A74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DB048A5-6066-4D57-A0E0-A19B8F8E7A74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DB048A5-6066-4D57-A0E0-A19B8F8E7A74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9FF6F21-B038-4F41-A2C1-079494CBC9BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9FF6F21-B038-4F41-A2C1-079494CBC9BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9FF6F21-B038-4F41-A2C1-079494CBC9BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9FF6F21-B038-4F41-A2C1-079494CBC9BC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0DB048A5-6066-4D57-A0E0-A19B8F8E7A74} = {87D99827-D83D-4C4F-A4E8-31A15A5FE835}
+		{B9FF6F21-B038-4F41-A2C1-079494CBC9BC} = {E4797B4C-EE73-40E0-8A49-F49CE142ABDC}
 	EndGlobalSection
 EndGlobal

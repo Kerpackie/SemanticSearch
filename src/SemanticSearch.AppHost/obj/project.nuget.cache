@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "EZQopw1zw0A=",
+  "dgSpecHash": "U8Sy57aG3Qc=",
   "success": true,
   "projectFilePath": "/Users/kerpackie/RiderProjects/SemanticSearch/src/SemanticSearch.AppHost/SemanticSearch.AppHost.csproj",
   "expectedPackageFiles": [
@@ -8,6 +8,7 @@
     "/Users/kerpackie/.nuget/packages/aspire.hosting/9.5.1/aspire.hosting.9.5.1.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/aspire.hosting.apphost/9.5.1/aspire.hosting.apphost.9.5.1.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/aspire.hosting.orchestration.osx-arm64/9.5.1/aspire.hosting.orchestration.osx-arm64.9.5.1.nupkg.sha512",
+    "/Users/kerpackie/.nuget/packages/aspire.hosting.qdrant/9.5.1/aspire.hosting.qdrant.9.5.1.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/aspire.hosting.redis/9.5.1/aspire.hosting.redis.9.5.1.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/aspnetcore.healthchecks.redis/9.0.0/aspnetcore.healthchecks.redis.9.0.0.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/aspnetcore.healthchecks.uris/9.0.0/aspnetcore.healthchecks.uris.9.0.0.nupkg.sha512",
@@ -65,6 +66,7 @@
     "/Users/kerpackie/.nuget/packages/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/pipelines.sockets.unofficial/2.2.8/pipelines.sockets.unofficial.2.2.8.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/polly.core/8.6.3/polly.core.8.6.3.nupkg.sha512",
+    "/Users/kerpackie/.nuget/packages/qdrant.client/1.15.1/qdrant.client.1.15.1.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/semver/3.0.0/semver.3.0.0.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/stackexchange.redis/2.9.11/stackexchange.redis.2.9.11.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/streamjsonrpc/2.22.11/streamjsonrpc.2.22.11.nupkg.sha512",

@@ -11,12 +11,15 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Mneme\Mneme.Api\Mneme.Api.csproj" />
+        <ProjectReference Include="..\R&D\MnemeTester\MnemeTester.csproj" />
         <ProjectReference Include="..\SemanticSearch.ApiService\SemanticSearch.ApiService.csproj"/>
         <ProjectReference Include="..\SemanticSearch.Web\SemanticSearch.Web.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.1"/>
+        <PackageReference Include="Aspire.Hosting.Qdrant" Version="9.5.1" />
         <PackageReference Include="Aspire.Hosting.Redis" Version="9.5.1"/>
     </ItemGroup>
 
