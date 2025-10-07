@@ -1,6 +1,19 @@
 [package]
 name = "Glyph"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+
+[[bin]] # Bin to run the HelloWorld gRPC server
+name = "Glyph"
+path = "src/server.rs"
 
 [dependencies]
+tonic = "*"
+prost = "0.14"
+tonic-prost = "*"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+tonic-health = "0.14.2"
+
+[build-dependencies]
+tonic-prost-build = "*"
+tonic-build = "0.14.2"
