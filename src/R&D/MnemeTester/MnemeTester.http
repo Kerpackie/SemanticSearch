@@ -1,0 +1,19 @@
+@MnemeTester_HostAddress = http://localhost:5195
+
+GET {{MnemeTester_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+### Health check (optional)
+GET http://localhost:5134/health
+Accept: application/json
+
+### Test the ProductSearch endpoint
+POST http://localhost:5195/products/search
+Content-Type: application/json
+
+{
+  "vector": [0.12, -0.03, 0.88, 0.41],
+  "limit": 5
+}
