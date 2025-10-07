@@ -5,5 +5,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile the health service
     tonic_prost_build::compile_protos("proto/health.proto")?;
 
+    tonic_prost_build::compile_protos("proto/embedding.proto")?;
+
     Ok(())
 }
