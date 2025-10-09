@@ -1,4 +1,3 @@
-use std::error::Error;
 use crate::embedder::model::EmbeddingModel;
 use crate::embedder::proto::{
     embedder_server::Embedder, EmbedSingleRequest, EmbedSingleResponse, Embedding, IndexRequest,
@@ -6,21 +5,27 @@ use crate::embedder::proto::{
 };
 use futures::Stream;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 use tonic::{Request, Response, Status, Streaming};
 
 pub struct EmbedderService {
-    pub model: Arc<EmbeddingModel>,
+    pub model: Arc<Mutex<EmbeddingModel>>,
 }
 
 type IndexTextsStream = Pin<Box<dyn Stream<Item = Result<IndexResponse, Status>> + Send>>;
 
+struct Batch {
+    document_ids: Vec<String>,
+    texts: Vec<String>,
+}
+
 #[tonic::async_trait]
 impl Embedder for EmbedderService {
-    // ... (The embed_single function remains the same) ...
+    
     async fn embed_single(
         &self,
         request: Request<EmbedSingleRequest>,
@@ -32,7 +37,10 @@ impl Embedder for EmbedderService {
 
         let model = self.model.clone();
 
-        let embedding_result = tokio::task::spawn_blocking(move || model.embed_batch(&[text]))
+        let embedding_result = tokio::task::spawn_blocking(move || {
+            let model_guard = model.lock().expect("Mutex lock failed");
+            model_guard.embed_batch(&[text])
+        })
             .await
             .map_err(|e| Status::internal(format!("Task join error: {}", e)))?;
 
@@ -61,57 +69,97 @@ impl Embedder for EmbedderService {
     ) -> Result<Response<Self::IndexTextsStream>, Status> {
         let mut request_stream = request.into_inner();
         let model = self.model.clone();
-        let (tx, rx) = mpsc::channel(32); // Increased buffer size slightly
 
-        // This main task will only be responsible for receiving requests
-        // and spawning new tasks to process them.
+        // The batch_tx channel has a small buffer. If the model worker can't keep up,
+        // this channel will fill up, and the `send` call will wait, creating backpressure.
+        let (batch_tx, mut batch_rx) = mpsc::channel::<Batch>(4); // Small buffer for backpressure
+        let (response_tx, response_rx) = mpsc::channel(32);
+
+        // Spawn a dedicated worker task to process batches.
+        // This task receives batches, runs the model, and sends results back.
         tokio::spawn(async move {
-            while let Some(result) = request_stream.next().await {
-                match result {
-                    Ok(req) => {
-                        let model_clone = model.clone();
-                        let tx_clone = tx.clone();
+            while let Some(batch) = batch_rx.recv().await {
+                let model_clone = model.clone();
+                let response_tx_clone = response_tx.clone();
 
-                        // **THE FIX:** Spawn a new async task for each message.
-                        // This allows the server to immediately process the next message
-                        // from the client without waiting for the previous one to finish.
-                        tokio::spawn(async move {
-                            let response = tokio::task::spawn_blocking(move || {
-                                let doc_id = req.document_id;
-                                let text = req.text;
-                                let result = model_clone.embed_batch(&[text]);
+                tokio::task::spawn_blocking(move || {
+                    let model_guard = model_clone.lock().expect("Mutex lock failed");
+                    let embeddings = model_guard.embed_batch(&batch.texts);
 
-                                match result {
-                                    Ok(mut embeddings) => IndexResponse {
-                                        document_id: doc_id,
-                                        embedding: embeddings.pop().map(|v| Embedding { values: v }),
-                                        success: true,
-                                    },
-                                    Err(_) => IndexResponse {
-                                        document_id: doc_id,
-                                        embedding: None,
-                                        success: false,
-                                    },
+                    match embeddings {
+                        Ok(embeddings) => {
+                            for (i, doc_id) in batch.document_ids.iter().enumerate() {
+                                let response = IndexResponse {
+                                    document_id: doc_id.clone(),
+                                    embedding: embeddings.get(i).map(|v| Embedding { values: v.clone() }),
+                                    success: true,
+                                };
+                                if response_tx_clone.blocking_send(Ok(response)).is_err() {
+                                    break; // Client disconnected
                                 }
-                            })
-                                .await
-                                .expect("Blocking task failed");
-
-                            if tx_clone.send(Ok(response)).await.is_err() {
-                                eprintln!("Response channel closed by client.");
                             }
-                        });
-                    }
-                    Err(e) => {
-                        if let Some(io_err) = e.source() {
-                            eprintln!("IO error from client stream: {}", io_err);
                         }
+                        Err(e) => {
+                            eprintln!("Batch embedding failed: {:?}", e);
+                            for doc_id in batch.document_ids {
+                                let response = IndexResponse {
+                                    document_id: doc_id,
+                                    embedding: None,
+                                    success: false,
+                                };
+                                if response_tx_clone.blocking_send(Ok(response)).is_err() {
+                                    break; // Client disconnected
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        // Spawn a task to read from the client stream and create batches.
+        tokio::spawn(async move {
+            const BATCH_SIZE: usize = 32;
+            const BATCH_TIMEOUT: Duration = Duration::from_millis(500);
+
+            let mut batch_ids = Vec::with_capacity(BATCH_SIZE);
+            let mut batch_texts = Vec::with_capacity(BATCH_SIZE);
+
+            loop {
+                match tokio::time::timeout(BATCH_TIMEOUT, request_stream.next()).await {
+                    // Message received from stream
+                    Ok(Some(Ok(req))) => {
+                        batch_ids.push(req.document_id);
+                        batch_texts.push(req.text);
+
+                        if batch_ids.len() >= BATCH_SIZE {
+                            let batch = Batch { document_ids: batch_ids, texts: batch_texts };
+                            if batch_tx.send(batch).await.is_err() {
+                                break; // Worker task died
+                            }
+                            batch_ids = Vec::with_capacity(BATCH_SIZE);
+                            batch_texts = Vec::with_capacity(BATCH_SIZE);
+                        }
+                    }
+                    // Stream ended or timed out
+                    Ok(None) | Err(_) => {
+                        if !batch_ids.is_empty() {
+                            let batch = Batch { document_ids: batch_ids, texts: batch_texts };
+                            let _ = batch_tx.send(batch).await; // Send final batch
+                        }
+                        break; // End of stream
+                    }
+                    // Client stream error
+                    Ok(Some(Err(e))) => {
+                        eprintln!("Client stream error: {}", e);
+                        break;
                     }
                 }
             }
         });
 
-        let output_stream = ReceiverStream::new(rx);
+        // Return the response stream to the client.
+        let output_stream = ReceiverStream::new(response_rx);
         Ok(Response::new(Box::pin(output_stream) as Self::IndexTextsStream))
     }
 }

@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package embedder;
+
+// The embedding service definition with specialized RPCs.
+service Embedder {
+  // Generates an embedding for a single text. Used for real-time queries.
+  rpc EmbedSingle(EmbedSingleRequest) returns (EmbedSingleResponse);
+
+  // Indexes a stream of texts for bulk processing. Returns a stream of results.
+  rpc IndexTexts(stream IndexRequest) returns (stream IndexResponse);
+}
+
+// Represents a single embedding vector.
+message Embedding {
+  repeated float values = 1;
+}
+
+// == Unary RPC Messages ==
+message EmbedSingleRequest {
+  string text = 1;
+}
+
+message EmbedSingleResponse {
+  Embedding embedding = 1;
+}
+
+// == Streaming RPC Messages ==
+message IndexRequest {
+  string document_id = 1;
+  string text = 2;
+}
+
+message IndexResponse {
+  string document_id = 1;
+  Embedding embedding = 2;
+  bool success = 3;
+}
