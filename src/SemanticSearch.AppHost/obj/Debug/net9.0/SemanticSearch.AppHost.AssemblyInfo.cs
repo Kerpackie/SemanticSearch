@@ -25,7 +25,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SemanticSearch.AppHost")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+be359291114311b39c458ef744f4795b132abbfe")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a846a28d15dfe34de29a9224cbeef359a2457f4e")]
 [assembly: System.Reflection.AssemblyProductAttribute("SemanticSearch.AppHost")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SemanticSearch.AppHost")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
