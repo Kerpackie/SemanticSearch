@@ -1,0 +1,42 @@
+syntax = "proto3";
+package clip;
+// The CLIP service definition for multimodal embeddings.
+service ClipEmbedder {
+  // Generates an embedding for a single text query.
+  rpc EmbedText(EmbedTextRequest) returns (EmbedResponse);
+  // Generates an embedding for a single image query.
+  rpc EmbedImage(EmbedImageRequest) returns (EmbedResponse);
+  // Indexes a stream of images for bulk processing.
+  rpc IndexImages(stream IndexImageRequest) returns (stream IndexResponse);
+}
+
+// Represents a single embedding vector.
+message Embedding {
+  repeated float values = 1;
+}
+
+// == Unary RPC Messages ==
+message EmbedTextRequest {
+  string text = 1;
+}
+
+message EmbedImageRequest {
+  // Image content, encoded as bytes (e.g., JPEG, PNG).
+  bytes image = 1;
+}
+
+message EmbedResponse {
+  Embedding embedding = 1;
+}
+
+// == Streaming RPC Messages ==
+message IndexImageRequest {
+  string document_id = 1;
+  bytes image = 2;
+}
+
+message IndexResponse {
+  string document_id = 1;
+  Embedding embedding = 2;
+  bool success = 3;
+}
