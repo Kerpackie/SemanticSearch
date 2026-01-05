@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "A51djlWsayU=",
+  "dgSpecHash": "mTXhir4e4JA=",
   "success": true,
   "projectFilePath": "/Users/kerpackie/RiderProjects/SemanticSearch/src/SemanticSearch.Web/SemanticSearch.Web.csproj",
   "expectedPackageFiles": [
@@ -54,7 +54,10 @@
     "/Users/kerpackie/.nuget/packages/stackexchange.redis/2.9.11/stackexchange.redis.2.9.11.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/system.diagnostics.diagnosticsource/9.0.0/system.diagnostics.diagnosticsource.9.0.0.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/system.io.pipelines/5.0.1/system.io.pipelines.5.0.1.nupkg.sha512",
-    "/Users/kerpackie/.nuget/packages/system.threading.ratelimiting/8.0.0/system.threading.ratelimiting.8.0.0.nupkg.sha512"
+    "/Users/kerpackie/.nuget/packages/system.threading.ratelimiting/8.0.0/system.threading.ratelimiting.8.0.0.nupkg.sha512",
+    "/Users/kerpackie/.nuget/packages/microsoft.netcore.app.ref/9.0.11/microsoft.netcore.app.ref.9.0.11.nupkg.sha512",
+    "/Users/kerpackie/.nuget/packages/microsoft.aspnetcore.app.ref/9.0.11/microsoft.aspnetcore.app.ref.9.0.11.nupkg.sha512",
+    "/Users/kerpackie/.nuget/packages/microsoft.netcore.app.host.osx-arm64/9.0.11/microsoft.netcore.app.host.osx-arm64.9.0.11.nupkg.sha512"
   ],
   "logs": []
 }

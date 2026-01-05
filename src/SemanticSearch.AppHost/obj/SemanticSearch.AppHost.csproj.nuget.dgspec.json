@@ -17,15 +17,14 @@
           "/Users/kerpackie/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
-          "net9.0"
+          "net10.0"
         ],
         "sources": {
-          "/opt/homebrew/Cellar/dotnet/9.0.6/libexec/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "net9.0": {
-            "targetAlias": "net9.0",
+          "net10.0": {
+            "targetAlias": "net10.0",
             "projectReferences": {}
           }
         },
@@ -37,35 +36,35 @@
         "restoreAuditProperties": {
           "enableAudit": "true",
           "auditLevel": "low",
-          "auditMode": "direct"
+          "auditMode": "all"
         },
-        "SdkAnalysisLevel": "9.0.100"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
-        "net9.0": {
-          "targetAlias": "net9.0",
+        "net10.0": {
+          "targetAlias": "net10.0",
           "dependencies": {
             "Aspire.Dashboard.Sdk.osx-arm64": {
               "target": "Package",
-              "version": "[9.5.1, )",
+              "version": "[13.1.0, )",
               "autoReferenced": true
             },
             "Aspire.Hosting.AppHost": {
               "target": "Package",
-              "version": "[9.5.1, )"
+              "version": "[13.1.0, )"
             },
             "Aspire.Hosting.Orchestration.osx-arm64": {
               "target": "Package",
-              "version": "[9.5.1, )",
+              "version": "[13.1.0, )",
               "autoReferenced": true
             },
             "Aspire.Hosting.Qdrant": {
               "target": "Package",
-              "version": "[9.5.1, )"
+              "version": "[13.1.0, )"
             },
             "Aspire.Hosting.Redis": {
               "target": "Package",
-              "version": "[9.5.1, )"
+              "version": "[13.1.0, )"
             }
           },
           "imports": [
@@ -84,7 +83,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/9.0.6/libexec/sdk/9.0.107/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
