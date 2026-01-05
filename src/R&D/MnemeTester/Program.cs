@@ -1,4 +1,4 @@
-using MnemeTester;                  // generated types from your proto
+using MnemeTester;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,8 +38,11 @@ app.MapPost("/products/search", async (ProductSearch.ProductSearchClient client,
         {
             Limit = dto.Limit
         };
-        if (dto.Vector is not null)
-            req.Vector.AddRange(dto.Vector);
+        if (dto.TextVector is not null)
+            req.TextVector.AddRange(dto.TextVector);
+        
+        if (dto.ImageVector is not null)
+            req.ImageVector.AddRange(dto.ImageVector);
 
         var reply = await client.SearchProductsAsync(req);
 
@@ -56,8 +59,8 @@ app.MapPost("/products/search", async (ProductSearch.ProductSearchClient client,
     })
     .WithName("SearchProducts");
 
-// (keep anything else you already had)
+
 app.Run();
 
 // Simple request DTO for the HTTP endpoint
-public sealed record SearchDto(float[] Vector, int Limit);
+public sealed record SearchDto(float[] TextVector, float[] ImageVector, int Limit);

@@ -9,8 +9,9 @@ service ProductSearch {
 }
 
 message ProductSearchRequest {
-  repeated float vector = 1;
-  int32 limit = 2;
+  repeated float textVector = 1;
+  repeated float imageVector = 2;
+  int32 limit = 3;
 }
 
 message ProductSearchResponse {

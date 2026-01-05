@@ -27,4 +27,5 @@ builder.AddProject<Projects.SemanticSearch_Web>("webfrontend")
     .WithReference(apiService)
     .WaitFor(apiService);
 
+
 builder.Build().Run();
