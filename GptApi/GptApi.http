@@ -1,0 +1,14 @@
+@GptApi_HostAddress = http://localhost:5033
+
+GET {{GptApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+### Test the /suggest endpoint with a sample user query
+POST {{GptApi_HostAddress}}/suggest
+Content-Type: application/json
+
+{
+  "request": "I have a navy blue blazer and white sneakers. I need to dress for a summer garden party."
+}
