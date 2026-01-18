@@ -20,6 +20,7 @@
           "net10.0"
         ],
         "sources": {
+          "/usr/local/share/dotnet/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -57,6 +58,10 @@
               "target": "Package",
               "version": "[13.1.0, )",
               "autoReferenced": true
+            },
+            "Aspire.Hosting.PostgreSQL": {
+              "target": "Package",
+              "version": "[13.1.0, )"
             },
             "Aspire.Hosting.Qdrant": {
               "target": "Package",

@@ -5,3 +5,9 @@
       context: .
       dockerfile: src/Mneme/Mneme.Api/Dockerfile
 
+  gptapi:
+    image: gptapi
+    build:
+      context: .
+      dockerfile: GptApi/Dockerfile
+
