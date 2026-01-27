@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SemanticSearch.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+69ffd2a1e63d333ebc50cb088104f246a7e334a4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e7e920e5320dd21a2cf8657e820eeab2c739e756")]
 [assembly: System.Reflection.AssemblyProductAttribute("SemanticSearch.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SemanticSearch.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

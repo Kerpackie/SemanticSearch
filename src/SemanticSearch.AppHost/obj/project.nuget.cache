@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "tKskocxfnrc=",
+  "dgSpecHash": "CE61wFRLMKE=",
   "success": true,
   "projectFilePath": "/Users/kerpackie/RiderProjects/SemanticSearch/src/SemanticSearch.AppHost/SemanticSearch.AppHost.csproj",
   "expectedPackageFiles": [
@@ -75,7 +75,6 @@
     "/Users/kerpackie/.nuget/packages/streamjsonrpc/2.22.23/streamjsonrpc.2.22.23.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/system.diagnostics.eventlog/10.0.1/system.diagnostics.eventlog.10.0.1.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/system.io.hashing/9.0.10/system.io.hashing.9.0.10.nupkg.sha512",
-    "/Users/kerpackie/.nuget/packages/system.io.pipelines/8.0.0/system.io.pipelines.8.0.0.nupkg.sha512",
     "/Users/kerpackie/.nuget/packages/yamldotnet/16.3.0/yamldotnet.16.3.0.nupkg.sha512"
   ],
   "logs": []

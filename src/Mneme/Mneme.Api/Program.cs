@@ -8,6 +8,7 @@ builder.AddServiceDefaults();
 
 // Services
 builder.Services.AddGrpc();
+builder.AddQdrantClient("qdrant");
 
 // Register the gRPC health service (no extra .AddCheck("self"))
 builder.Services.AddGrpcHealthChecks();

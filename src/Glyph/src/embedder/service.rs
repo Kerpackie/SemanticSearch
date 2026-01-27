@@ -25,7 +25,7 @@ struct Batch {
 
 #[tonic::async_trait]
 impl Embedder for EmbedderService {
-    
+
     async fn embed_single(
         &self,
         request: Request<EmbedSingleRequest>,
@@ -70,19 +70,21 @@ impl Embedder for EmbedderService {
         let mut request_stream = request.into_inner();
         let model = self.model.clone();
 
-        // The batch_tx channel has a small buffer. If the model worker can't keep up,
-        // this channel will fill up, and the `send` call will wait, creating backpressure.
-        let (batch_tx, mut batch_rx) = mpsc::channel::<Batch>(4); // Small buffer for backpressure
+        // 1. Backpressure Channel
+        // If the buffer is full (4 batches), the sender waits.
+        let (batch_tx, mut batch_rx) = mpsc::channel::<Batch>(4);
         let (response_tx, response_rx) = mpsc::channel(32);
 
-        // Spawn a dedicated worker task to process batches.
-        // This task receives batches, runs the model, and sends results back.
+        // 2. Worker Task
         tokio::spawn(async move {
             while let Some(batch) = batch_rx.recv().await {
                 let model_clone = model.clone();
                 let response_tx_clone = response_tx.clone();
 
-                tokio::task::spawn_blocking(move || {
+                // FIX: Added .await here!
+                // This forces the loop to wait until the embeddings are generated
+                // before picking up the next batch. This restores backpressure.
+                let _ = tokio::task::spawn_blocking(move || {
                     let model_guard = model_clone.lock().expect("Mutex lock failed");
                     let embeddings = model_guard.embed_batch(&batch.texts);
 
@@ -94,8 +96,9 @@ impl Embedder for EmbedderService {
                                     embedding: embeddings.get(i).map(|v| Embedding { values: v.clone() }),
                                     success: true,
                                 };
+                                // If client disconnected, stop
                                 if response_tx_clone.blocking_send(Ok(response)).is_err() {
-                                    break; // Client disconnected
+                                    return;
                                 }
                             }
                         }
@@ -108,16 +111,16 @@ impl Embedder for EmbedderService {
                                     success: false,
                                 };
                                 if response_tx_clone.blocking_send(Ok(response)).is_err() {
-                                    break; // Client disconnected
+                                    return;
                                 }
                             }
                         }
                     }
-                });
+                }).await;
             }
         });
 
-        // Spawn a task to read from the client stream and create batches.
+        // 3. Reader Task
         tokio::spawn(async move {
             const BATCH_SIZE: usize = 32;
             const BATCH_TIMEOUT: Duration = Duration::from_millis(500);
@@ -127,29 +130,27 @@ impl Embedder for EmbedderService {
 
             loop {
                 match tokio::time::timeout(BATCH_TIMEOUT, request_stream.next()).await {
-                    // Message received from stream
                     Ok(Some(Ok(req))) => {
                         batch_ids.push(req.document_id);
                         batch_texts.push(req.text);
 
                         if batch_ids.len() >= BATCH_SIZE {
                             let batch = Batch { document_ids: batch_ids, texts: batch_texts };
+                            // This .send().await will now BLOCK if the worker is busy
                             if batch_tx.send(batch).await.is_err() {
-                                break; // Worker task died
+                                break;
                             }
                             batch_ids = Vec::with_capacity(BATCH_SIZE);
                             batch_texts = Vec::with_capacity(BATCH_SIZE);
                         }
                     }
-                    // Stream ended or timed out
                     Ok(None) | Err(_) => {
                         if !batch_ids.is_empty() {
                             let batch = Batch { document_ids: batch_ids, texts: batch_texts };
-                            let _ = batch_tx.send(batch).await; // Send final batch
+                            let _ = batch_tx.send(batch).await;
                         }
-                        break; // End of stream
+                        break;
                     }
-                    // Client stream error
                     Ok(Some(Err(e))) => {
                         eprintln!("Client stream error: {}", e);
                         break;
@@ -158,7 +159,6 @@ impl Embedder for EmbedderService {
             }
         });
 
-        // Return the response stream to the client.
         let output_stream = ReceiverStream::new(response_rx);
         Ok(Response::new(Box::pin(output_stream) as Self::IndexTextsStream))
     }

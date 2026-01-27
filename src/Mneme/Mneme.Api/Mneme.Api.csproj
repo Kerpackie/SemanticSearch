@@ -13,10 +13,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Aspire.Qdrant.Client" Version="13.1.0" />
         <PackageReference Include="Grpc.AspNetCore" Version="2.64.0" />
         <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.71.0" />
         <PackageReference Include="Grpc.HealthCheck" Version="2.71.0" />
         <PackageReference Include="Microsoft.AspNetCore.Diagnostics.HealthChecks" Version="2.2.0" />
+        <PackageReference Include="Qdrant.Client" Version="1.15.1" />
     </ItemGroup>
 
     <ItemGroup>
