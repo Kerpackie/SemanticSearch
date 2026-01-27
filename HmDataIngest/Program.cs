@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Globalization;
-using System.Threading.Channels;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Grpc.Core;
@@ -12,7 +11,7 @@ using Mneme.Api;
 
 namespace HmDataIngest;
 
-public class InflightProduct
+public class ProductState
 {
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
@@ -21,28 +20,25 @@ public class InflightProduct
     
     public float[]? TextVector { get; set; }
     public float[]? ImageVector { get; set; }
-    public bool HasImage { get; set; } = true;
-
-    public bool IsComplete => TextVector != null && (!HasImage || ImageVector != null);
+    public bool HasImage { get; set; } = false;
+    public byte[]? ImageBytes { get; set; } // Temp storage for image data
 }
 
 class Program
 {
-    // Configuration
     const string CsvPath = "/Users/kerpackie/RiderProjects/SemanticSearch/DatabaseSeeder/Data/articles.csv";
-    const string ImagesRootPath = "/Users/kerpackie/RiderProjects/SemanticSearch/DatabaseSeeder/Data/images/"; 
+    const string ImagesRootPath = "/Users/kerpackie/Downloads/h-and-m-personalized-fashion-recommendations/images"; 
     
     const string TextEmbedderUrl = "http://localhost:50051"; 
     const string ImageEmbedderUrl = "http://localhost:50053"; 
     const string MnemeUrl = "http://localhost:5074"; 
-    const int MnemeBatchSize = 50;
-
-    static ConcurrentDictionary<string, InflightProduct> _inflight = new();
-    static Channel<Product> _uploadChannel = Channel.CreateBounded<Product>(1000);
+    
+    // Batch size for processing. Kept small to ensure stability.
+    const int ProcessingBatchSize = 50; 
 
     static async Task Main(string[] args)
     {
-        Console.WriteLine("Starting Multi-Modal Ingestion Pipeline...");
+        Console.WriteLine("Starting Sequential Batch Ingestion Pipeline...");
 
         using var textChannel = GrpcChannel.ForAddress(TextEmbedderUrl);
         var textClient = new Embedder.Api.Embedder.EmbedderClient(textChannel);
@@ -53,31 +49,15 @@ class Program
         using var mnemeChannel = GrpcChannel.ForAddress(MnemeUrl);
         var mnemeClient = new ProductSearch.ProductSearchClient(mnemeChannel);
 
-        using var textCall = textClient.IndexTexts();
-        using var imageCall = imageClient.IndexImages();
-
-        var textTask = ProcessTextResponses(textCall.ResponseStream);
-        var imageTask = ProcessImageResponses(imageCall.ResponseStream);
+        await ProcessInBatches(textClient, imageClient, mnemeClient);
         
-        var uploadTask = BatchAndUpload(mnemeClient);
-
-        await ProcessCsv(textCall.RequestStream, imageCall.RequestStream);
-
-        Console.WriteLine("\nFinished reading CSV. Closing streams...");
-        await textCall.RequestStream.CompleteAsync();
-        await imageCall.RequestStream.CompleteAsync();
-        
-        await Task.WhenAll(textTask, imageTask);
-        
-        _uploadChannel.Writer.Complete(); 
-        await uploadTask;
-
         Console.WriteLine("\nIngestion Complete!");
     }
 
-    static async Task ProcessCsv(
-        IClientStreamWriter<Embedder.Api.IndexRequest> textStream, 
-        IClientStreamWriter<ClipEmbedder.Api.IndexImageRequest> imageStream)
+    static async Task ProcessInBatches(
+        Embedder.Api.Embedder.EmbedderClient textClient,
+        ClipEmbedder.Api.ClipEmbedder.ClipEmbedderClient imageClient,
+        ProductSearch.ProductSearchClient mnemeClient)
     {
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
@@ -89,17 +69,19 @@ class Program
         using var csv = new CsvReader(reader, config);
         
         var records = csv.GetRecordsAsync<ArticleCsv>();
-        int count = 0;
+        var currentBatch = new List<ProductState>();
+        int totalProcessed = 0;
 
         await foreach (var row in records)
         {
             if (string.IsNullOrWhiteSpace(row.DetailDesc)) continue;
 
+            // 1. Prepare Product State
             string folderPrefix = row.ArticleId.Length >= 3 ? row.ArticleId.Substring(0, 3) : "000";
             string imagePath = Path.Combine(ImagesRootPath, folderPrefix, $"{row.ArticleId}.jpg");
             bool imageExists = File.Exists(imagePath);
 
-            var product = new InflightProduct
+            var p = new ProductState
             {
                 Id = row.ArticleId,
                 Name = row.ProdName,
@@ -114,147 +96,140 @@ class Program
                 }
             };
 
-            _inflight.TryAdd(row.ArticleId, product);
-
-            var fullText = $"{row.ProdName}. {row.DetailDesc}. Color: {row.Color}. Type: {row.Type}. Pattern: {row.Pattern}. Group: {row.Group}.";
-            await textStream.WriteAsync(new Embedder.Api.IndexRequest { DocumentId = row.ArticleId, Text = fullText });
-
+            // Pre-load image bytes so we don't do file I/O during the network phase
             if (imageExists)
             {
-                try 
+                try { p.ImageBytes = await File.ReadAllBytesAsync(imagePath); }
+                catch { p.HasImage = false; }
+            }
+
+            currentBatch.Add(p);
+
+            // 2. Process Batch if Full
+            if (currentBatch.Count >= ProcessingBatchSize)
+            {
+                await ProcessBatch(currentBatch, textClient, imageClient, mnemeClient);
+                totalProcessed += currentBatch.Count;
+                Console.Write($"\rProcessed {totalProcessed} products...");
+                currentBatch.Clear();
+            }
+        }
+
+        // Process remaining
+        if (currentBatch.Count > 0)
+        {
+            await ProcessBatch(currentBatch, textClient, imageClient, mnemeClient);
+            totalProcessed += currentBatch.Count;
+        }
+    }
+
+    static async Task ProcessBatch(
+        List<ProductState> batch,
+        Embedder.Api.Embedder.EmbedderClient textClient,
+        ClipEmbedder.Api.ClipEmbedder.ClipEmbedderClient imageClient,
+        ProductSearch.ProductSearchClient mnemeClient)
+    {
+        // PHASE 1: Text Embeddings
+        // We open a new stream for every batch. This is slightly less efficient but VERY robust against crashes.
+        // If a stream dies, it only affects 50 items, and we retry or fail cleanly.
+        using (var textCall = textClient.IndexTexts())
+        {
+            var responseTask = ReadTextResponses(textCall.ResponseStream, batch);
+            
+            foreach (var p in batch)
+            {
+                var fullText = $"{p.Name}. {p.Description}. Color: {p.Metadata["color"]}. Type: {p.Metadata["type"]}.";
+                await textCall.RequestStream.WriteAsync(new Embedder.Api.IndexRequest { DocumentId = p.Id, Text = fullText });
+            }
+            await textCall.RequestStream.CompleteAsync();
+            await responseTask;
+        }
+
+        // PHASE 2: Image Embeddings
+        var imagesToEmbed = batch.Where(p => p.HasImage && p.ImageBytes != null).ToList();
+        if (imagesToEmbed.Any())
+        {
+            using (var imageCall = imageClient.IndexImages())
+            {
+                var responseTask = ReadImageResponses(imageCall.ResponseStream, batch);
+                
+                foreach (var p in imagesToEmbed)
                 {
-                    byte[] imageBytes = await File.ReadAllBytesAsync(imagePath);
-                    await imageStream.WriteAsync(new ClipEmbedder.Api.IndexImageRequest 
+                    await imageCall.RequestStream.WriteAsync(new ClipEmbedder.Api.IndexImageRequest 
                     { 
-                        DocumentId = row.ArticleId, 
-                        Image = ByteString.CopyFrom(imageBytes) 
+                        DocumentId = p.Id, 
+                        Image = ByteString.CopyFrom(p.ImageBytes!) 
                     });
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"\nError reading image {row.ArticleId}: {ex.Message}");
-                    product.HasImage = false; 
-                    await CheckAndDispatch(product); 
-                }
+                await imageCall.RequestStream.CompleteAsync();
+                await responseTask;
             }
-
-            count++;
-            if (count % 1000 == 0) Console.Write($"\rDispatched {count} requests...");
         }
-    }
 
-    static async Task ProcessTextResponses(IAsyncStreamReader<Embedder.Api.IndexResponse> responseStream)
-    {
-        await foreach (var response in responseStream.ReadAllAsync())
+        // PHASE 3: Upload to Mneme
+        var uploadList = new List<Product>();
+        foreach (var p in batch)
         {
-            if (!response.Success) 
+            // Only upload if we at least got the text vector (mandatory)
+            if (p.TextVector != null)
             {
-                Console.WriteLine($"\nText Embedding failed for {response.DocumentId}");
-                _inflight.TryRemove(response.DocumentId, out _); 
-                continue;
-            }
-
-            if (_inflight.TryGetValue(response.DocumentId, out var product))
-            {
-                product.TextVector = response.Embedding.Values.ToArray();
-                await CheckAndDispatch(product);
+                var proto = MapToProto(p);
+                uploadList.Add(proto);
             }
         }
-    }
 
-    static async Task ProcessImageResponses(IAsyncStreamReader<ClipEmbedder.Api.IndexResponse> responseStream)
-    {
-        await foreach (var response in responseStream.ReadAllAsync())
+        if (uploadList.Count > 0)
         {
-            if (!response.Success) 
+            try
             {
-                Console.WriteLine($"\nImage Embedding failed for {response.DocumentId}");
-                if (_inflight.TryGetValue(response.DocumentId, out var failedProduct))
-                {
-                    failedProduct.HasImage = false; 
-                    await CheckAndDispatch(failedProduct);
-                }
-                continue;
+                var req = new UpsertProductsRequest();
+                req.Products.AddRange(uploadList);
+                var res = await mnemeClient.UpsertProductsAsync(req);
+                if (!res.Success) Console.WriteLine($"\nBatch Upload Failed: {res.Message}");
             }
-
-            if (_inflight.TryGetValue(response.DocumentId, out var product))
+            catch (Exception ex)
             {
-                product.ImageVector = response.Embedding.Values.ToArray();
-                await CheckAndDispatch(product);
+                Console.WriteLine($"\nBatch Upload RPC Error: {ex.Message}");
             }
         }
     }
 
-    // UPDATED: Async method to handle channel writing safely
-    static async Task CheckAndDispatch(InflightProduct product)
+    static async Task ReadTextResponses(IAsyncStreamReader<Embedder.Api.IndexResponse> stream, List<ProductState> batch)
     {
-        bool isReady = false;
+        // Create a lookup for O(1) access
+        var batchMap = batch.ToDictionary(p => p.Id);
         
-        lock (product)
-        {
-            if (product.IsComplete)
-            {
-                // We mark it as ready and remove it from dictionary to prevent double processing
-                // But we don't write to the channel inside the lock
-                if (_inflight.TryRemove(product.Id, out _))
-                {
-                    isReady = true;
-                }
-            }
-        }
-
-        if (isReady)
-        {
-            var finalProduct = MapToProto(product);
-            await _uploadChannel.Writer.WriteAsync(finalProduct);
-        }
-    }
-
-    static async Task BatchAndUpload(ProductSearch.ProductSearchClient mnemeClient)
-    {
-        var batch = new List<Product>();
-        int totalUploaded = 0;
-        
-        await foreach (var item in _uploadChannel.Reader.ReadAllAsync())
-        {
-            batch.Add(item);
-
-            if (batch.Count >= MnemeBatchSize)
-            {
-                await UploadBatch(mnemeClient, batch);
-                totalUploaded += batch.Count;
-                Console.Write($"\rIndexed {totalUploaded} products (Text+Image)...");
-                batch.Clear();
-            }
-        }
-
-        if (batch.Count > 0) 
-        {
-            await UploadBatch(mnemeClient, batch);
-            totalUploaded += batch.Count;
-        }
-    }
-
-    static async Task UploadBatch(ProductSearch.ProductSearchClient client, List<Product> batch)
-    {
         try
         {
-            var req = new UpsertProductsRequest();
-            req.Products.AddRange(batch);
-            var res = await client.UpsertProductsAsync(req);
-            
-            if (!res.Success)
+            await foreach (var resp in stream.ReadAllAsync())
             {
-                Console.WriteLine($"\n[ERROR] Batch rejected: {res.Message}");
+                if (resp.Success && batchMap.TryGetValue(resp.DocumentId, out var p))
+                {
+                    p.TextVector = resp.Embedding.Values.ToArray();
+                }
             }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"\n[RPC ERROR] Failed to upload: {ex.Message}");
-        }
+        catch (RpcException) { /* Log if needed */ }
     }
 
-    static Product MapToProto(InflightProduct p)
+    static async Task ReadImageResponses(IAsyncStreamReader<ClipEmbedder.Api.IndexResponse> stream, List<ProductState> batch)
+    {
+        var batchMap = batch.ToDictionary(p => p.Id);
+        
+        try
+        {
+            await foreach (var resp in stream.ReadAllAsync())
+            {
+                if (resp.Success && batchMap.TryGetValue(resp.DocumentId, out var p))
+                {
+                    p.ImageVector = resp.Embedding.Values.ToArray();
+                }
+            }
+        }
+        catch (RpcException) { /* Log if needed */ }
+    }
+
+    static Product MapToProto(ProductState p)
     {
         var uuid = GenerateUuidFromStr(p.Id);
         var proto = new Product
