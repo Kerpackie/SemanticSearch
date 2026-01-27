@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         model: shared_model,
     };
 
-    let addr = "[::1]:50051".parse()?;
+    let addr = "[::1]:50053".parse()?;
     println!("gRPC ClipEmbedderServer listening on {}", addr);
 
     let (health_reporter, health_service) = tonic_health::server::health_reporter();

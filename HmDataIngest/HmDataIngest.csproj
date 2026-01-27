@@ -33,6 +33,7 @@
         -->
         <Protobuf Include="Protos\embedding.proto" GrpcServices="Client" />
         <Protobuf Include="Protos\product.proto" GrpcServices="Client" />
+        <Protobuf Include="Protos\clip.proto" GrpcServices="Client" />
 
         <!-- Optional: Keep if you are using it, otherwise remove -->
         <Protobuf Include="Protos\greet.proto" GrpcServices="Client" />

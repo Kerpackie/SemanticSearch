@@ -8,7 +8,7 @@ service ProductSearch {
   // Search for products using vector similarity
   rpc SearchProducts (ProductSearchRequest) returns (ProductSearchResponse);
 
-  // New: Batch upsert products into the database
+  // Batch upsert products into the database
   rpc UpsertProducts (UpsertProductsRequest) returns (UpsertProductsResponse);
 }
 
@@ -37,8 +37,10 @@ message Product {
   string name = 2;
   string description = 3;
   float score = 4; // Output only
+
   repeated float textVector = 5; // Input only
+  repeated float imageVector = 6; // New: Image Embeddings
 
   // Flexible key-value pairs for things like "color", "category", "url"
-  map<string, string> metadata = 6;
+  map<string, string> metadata = 7;
 }

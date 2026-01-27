@@ -76,15 +76,21 @@ impl ClipEmbedder for ClipEmbedderService {
     ) -> Result<Response<Self::IndexImagesStream>, Status> {
         let mut request_stream = request.into_inner();
         let model = self.model.clone();
+
         let (batch_tx, mut batch_rx) = mpsc::channel::<ImageBatch>(4);
-        let (response_tx, response_rx) = mpsc::channel(32);
+
+        // FIX 1: Increased buffer from 32 to 128 for smoother streaming
+        let (response_tx, response_rx) = mpsc::channel(128);
 
         // Worker task to process image batches
         tokio::spawn(async move {
             while let Some(batch) = batch_rx.recv().await {
                 let model = model.clone();
                 let response_tx = response_tx.clone();
-                tokio::task::spawn_blocking(move || {
+
+                // FIX 2: Added .await here!
+                // This forces the loop to wait for the embedding to finish before taking the next batch.
+                let _ = tokio::task::spawn_blocking(move || {
                     let embeddings_result = model.lock().unwrap().embed_images(&batch.images);
                     match embeddings_result {
                         Ok(embeddings) => {
@@ -97,7 +103,7 @@ impl ClipEmbedder for ClipEmbedderService {
                                     success: true,
                                 };
                                 if response_tx.blocking_send(Ok(response)).is_err() {
-                                    break;
+                                    return; // Client disconnected
                                 }
                             }
                         }
@@ -110,12 +116,12 @@ impl ClipEmbedder for ClipEmbedderService {
                                     success: false,
                                 };
                                 if response_tx.blocking_send(Ok(response)).is_err() {
-                                    break;
+                                    return;
                                 }
                             }
                         }
                     }
-                });
+                }).await;
             }
         });
 
