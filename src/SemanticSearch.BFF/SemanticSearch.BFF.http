@@ -1,0 +1,6 @@
+@SemanticSearch.BFF_HostAddress = http://localhost:5134
+
+GET {{SemanticSearch.BFF_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
