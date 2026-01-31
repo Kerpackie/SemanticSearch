@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package reranker;
+
+// The reranker service definition for relevance scoring.
+service Reranker {
+  // Reranks a list of documents based on relevance to a query.
+  rpc Rerank(RerankRequest) returns (RerankResponse);
+  
+  // Scores a single query-document pair.
+  rpc ScorePair(ScorePairRequest) returns (ScorePairResponse);
+}
+
+// A document to be reranked.
+message Document {
+  string id = 1;
+  string text = 2;
+}
+
+// A reranked result with its score.
+message RankedDocument {
+  string id = 1;
+  string text = 2;
+  float score = 3;
+  int32 rank = 4;
+}
+
+// == Rerank RPC Messages ==
+message RerankRequest {
+  string query = 1;
+  repeated Document documents = 2;
+  // Optional: number of top results to return (0 = return all)
+  int32 top_k = 3;
+}
+
+message RerankResponse {
+  repeated RankedDocument results = 1;
+}
+
+// == ScorePair RPC Messages ==
+message ScorePairRequest {
+  string query = 1;
+  string document = 2;
+}
+
+message ScorePairResponse {
+  float score = 1;
+}

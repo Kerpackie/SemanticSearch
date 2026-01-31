@@ -1,0 +1,161 @@
+use candle_core::{Device, Module, Tensor};
+use candle_nn::{Linear, VarBuilder};
+use candle_transformers::models::bert::{BertModel, Config, DTYPE};
+use hf_hub::{api::sync::Api, Repo, RepoType};
+use tokenizers::Tokenizer;
+use anyhow::{Error as E, Result};
+
+/// A reranker model for scoring query-document relevance.
+/// Uses a cross-encoder architecture (BERT-based) that takes query-document pairs
+/// and outputs relevance scores.
+pub struct RerankerModel {
+    pub model: BertModel,
+    pub classifier: Linear,
+    pub tokenizer: Tokenizer,
+    pub device: Device,
+}
+
+impl RerankerModel {
+    /// Creates a new RerankerModel with the specified model from HuggingFace.
+    /// Recommended models:
+    /// - "cross-encoder/ms-marco-MiniLM-L-6-v2" (22M params, fast, good quality)
+    /// - "cross-encoder/ms-marco-MiniLM-L-12-v2" (33M params, better quality)
+    /// - "cross-encoder/ms-marco-TinyBERT-L-2-v2" (4.4M params, very fast)
+    pub fn new(model_id: &str) -> Result<Self> {
+        let device = if candle_core::utils::metal_is_available() {
+            Device::new_metal(0)?
+        } else {
+            Device::Cpu
+        };
+        
+        let api = Api::new()?;
+        let repo = api.repo(Repo::new(model_id.to_string(), RepoType::Model));
+
+        let config_filename = repo.get("config.json")?;
+        let tokenizer_filename = repo.get("tokenizer.json")?;
+        let weights_filename = repo.get("model.safetensors")?;
+
+        let config: Config = serde_json::from_slice(&std::fs::read(config_filename)?)?;
+        let tokenizer = Tokenizer::from_file(tokenizer_filename).map_err(E::msg)?;
+
+        let vb =
+            unsafe { VarBuilder::from_mmaped_safetensors(&[weights_filename], DTYPE, &device)? };
+        
+        // Cross-encoder models have weights prefixed with "bert."
+        let bert_vb = vb.pp("bert");
+        let model = BertModel::load(bert_vb, &config)?;
+        
+        // Load the classifier head for reranking (outputs a single score)
+        // The classifier weights are at classifier.weight and classifier.bias
+        let classifier_vb = vb.pp("classifier");
+        let num_labels = 1; // Rerankers output a single relevance score
+        let classifier = candle_nn::linear(config.hidden_size, num_labels, classifier_vb)?;
+
+        Ok(Self {
+            model,
+            classifier,
+            tokenizer,
+            device,
+        })
+    }
+
+    /// Scores a batch of query-document pairs.
+    /// Returns relevance scores where higher = more relevant.
+    pub fn score_pairs(&self, query: &str, documents: &[String]) -> Result<Vec<f32>> {
+        if documents.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let mut tokenizer = self.tokenizer.clone();
+
+        // Configure padding for batch processing
+        if let Some(pp) = tokenizer.get_padding_mut() {
+            pp.strategy = tokenizers::PaddingStrategy::BatchLongest;
+        } else {
+            let pp = tokenizers::PaddingParams {
+                strategy: tokenizers::PaddingStrategy::BatchLongest,
+                ..Default::default()
+            };
+            tokenizer.with_padding(Some(pp));
+        }
+
+        // Configure truncation to handle long texts
+        tokenizer.with_truncation(Some(tokenizers::TruncationParams {
+            max_length: 512,
+            ..Default::default()
+        })).map_err(E::msg)?;
+
+        // Encode query-document pairs
+        // For rerankers, we encode (query, document) pairs together
+        let pairs: Vec<(String, String)> = documents
+            .iter()
+            .map(|doc| (query.to_string(), doc.clone()))
+            .collect();
+
+        let tokens = tokenizer
+            .encode_batch(pairs, true)
+            .map_err(E::msg)?;
+
+        let token_ids: Vec<Tensor> = tokens
+            .iter()
+            .map(|tokens| Tensor::new(tokens.get_ids(), &self.device))
+            .collect::<candle_core::Result<Vec<_>>>()?;
+
+        let token_ids = Tensor::stack(&token_ids, 0)?;
+        
+        // For cross-encoders, token_type_ids distinguish query (0) from document (1)
+        let token_type_ids: Vec<Tensor> = tokens
+            .iter()
+            .map(|tokens| Tensor::new(tokens.get_type_ids(), &self.device))
+            .collect::<candle_core::Result<Vec<_>>>()?;
+        let token_type_ids = Tensor::stack(&token_type_ids, 0)?;
+
+        let attention_mask: Vec<Tensor> = tokens
+            .iter()
+            .map(|tokens| Tensor::new(tokens.get_attention_mask(), &self.device))
+            .collect::<candle_core::Result<Vec<_>>>()?;
+        let attention_mask = Tensor::stack(&attention_mask, 0)?;
+
+        // Run the model
+        let embeddings = self
+            .model
+            .forward(&token_ids, &token_type_ids, Some(&attention_mask))?;
+
+        // Debug: print tensor shapes
+        eprintln!("embeddings shape: {:?}", embeddings.shape());
+
+        // For rerankers, we use the [CLS] token's output (position 0 in sequence)
+        // embeddings shape: [batch_size, seq_len, hidden_size]
+        // We want: [batch_size, hidden_size]
+        let (batch_size, _seq_len, hidden_size) = embeddings.dims3()?;
+        let cls_output = embeddings.narrow(1, 0, 1)?.reshape((batch_size, hidden_size))?;
+        
+        eprintln!("cls_output shape: {:?}", cls_output.shape());
+
+        // Pass through the classifier head to get relevance logits
+        let logits = self.classifier.forward(&cls_output)?; // Shape: [batch_size, 1]
+        
+        eprintln!("logits shape: {:?}", logits.shape());
+        
+        let logits = logits.squeeze(1)?; // Shape: [batch_size]
+        
+        // Get the raw scores
+        let scores = logits.to_vec1::<f32>()?;
+
+        // Apply sigmoid to convert logits to probabilities (0-1 range)
+        let scores: Vec<f32> = scores.iter().map(|&x| sigmoid(x)).collect();
+
+        Ok(scores)
+    }
+
+    /// Scores a single query-document pair.
+    pub fn score_single(&self, query: &str, document: &str) -> Result<f32> {
+        let scores = self.score_pairs(query, &[document.to_string()])?;
+        scores.into_iter().next().ok_or_else(|| E::msg("No score returned"))
+    }
+}
+
+/// Sigmoid activation function
+fn sigmoid(x: f32) -> f32 {
+    1.0 / (1.0 + (-x).exp())
+}
