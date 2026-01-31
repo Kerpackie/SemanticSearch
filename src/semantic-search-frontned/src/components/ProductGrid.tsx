@@ -1,4 +1,4 @@
-import { Product } from '../types';
+import type {Product} from '../types';
 import { ProductCard } from './ProductCard';
 import './ProductGrid.css';
 
@@ -40,7 +40,7 @@ export function ProductGrid({ products, loading, onProductClick }: ProductGridPr
     <div className="product-grid">
       {products.map(product => (
         <ProductCard 
-          key={product.id} 
+          key={product.articleId} 
           product={product} 
           onClick={onProductClick}
         />

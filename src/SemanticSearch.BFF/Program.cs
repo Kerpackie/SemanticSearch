@@ -23,78 +23,202 @@ if (app.Environment.IsDevelopment())
 app.UseCors();
 app.UseHttpsRedirection();
 
-// Stub product data for the clothing ecommerce platform
-var products = new List<Product>
+// API Endpoints - now fetching from PostgreSQL via PgApi
+app.MapGet("/api/products", async (string? category, string? search, int? page, int? pageSize, ProductService.ProductServiceClient pgApiClient) =>
 {
-    new(1, "Classic White T-Shirt", "A timeless white cotton t-shirt perfect for any casual occasion.", 29.99m, "Tops", "https://picsum.photos/seed/tshirt1/400/500", ["White", "Black", "Gray"], ["S", "M", "L", "XL"], 4.5, 128),
-    new(2, "Slim Fit Denim Jeans", "Modern slim fit jeans with comfortable stretch fabric.", 79.99m, "Bottoms", "https://picsum.photos/seed/jeans1/400/500", ["Blue", "Black", "Dark Blue"], ["28", "30", "32", "34", "36"], 4.7, 256),
-    new(3, "Wool Blend Blazer", "Sophisticated blazer perfect for business or smart casual wear.", 149.99m, "Outerwear", "https://picsum.photos/seed/blazer1/400/500", ["Navy", "Charcoal", "Black"], ["S", "M", "L", "XL"], 4.8, 89),
-    new(4, "Floral Summer Dress", "Light and breezy floral print dress for warm weather.", 59.99m, "Dresses", "https://picsum.photos/seed/dress1/400/500", ["Blue Floral", "Pink Floral", "Yellow Floral"], ["XS", "S", "M", "L"], 4.6, 167),
-    new(5, "Leather Chelsea Boots", "Premium leather Chelsea boots with elastic side panels.", 189.99m, "Footwear", "https://picsum.photos/seed/boots1/400/500", ["Brown", "Black"], ["7", "8", "9", "10", "11", "12"], 4.9, 203),
-    new(6, "Cashmere Sweater", "Luxuriously soft cashmere sweater for ultimate comfort.", 199.99m, "Tops", "https://picsum.photos/seed/sweater1/400/500", ["Cream", "Navy", "Burgundy"], ["S", "M", "L", "XL"], 4.8, 94),
-    new(7, "Running Sneakers", "Lightweight performance sneakers with cushioned sole.", 129.99m, "Footwear", "https://picsum.photos/seed/sneakers1/400/500", ["White/Blue", "Black/Red", "Gray/Green"], ["7", "8", "9", "10", "11", "12"], 4.4, 312),
-    new(8, "Linen Shirt", "Breathable linen shirt perfect for summer days.", 69.99m, "Tops", "https://picsum.photos/seed/shirt1/400/500", ["White", "Light Blue", "Beige"], ["S", "M", "L", "XL", "XXL"], 4.3, 178),
-    new(9, "Pleated Midi Skirt", "Elegant pleated skirt with a flattering midi length.", 49.99m, "Bottoms", "https://picsum.photos/seed/skirt1/400/500", ["Black", "Navy", "Blush"], ["XS", "S", "M", "L"], 4.5, 145),
-    new(10, "Puffer Jacket", "Warm and lightweight puffer jacket for cold weather.", 179.99m, "Outerwear", "https://picsum.photos/seed/puffer1/400/500", ["Black", "Navy", "Olive"], ["S", "M", "L", "XL"], 4.7, 221),
-    new(11, "Cotton Chinos", "Versatile cotton chinos for a smart casual look.", 59.99m, "Bottoms", "https://picsum.photos/seed/chinos1/400/500", ["Khaki", "Navy", "Olive", "Gray"], ["28", "30", "32", "34", "36"], 4.4, 189),
-    new(12, "Silk Blouse", "Elegant silk blouse with a relaxed fit.", 89.99m, "Tops", "https://picsum.photos/seed/blouse1/400/500", ["Ivory", "Black", "Dusty Rose"], ["XS", "S", "M", "L"], 4.6, 112)
-};
-
-var categories = new[] { "All", "Tops", "Bottoms", "Dresses", "Outerwear", "Footwear" };
-
-// API Endpoints
-app.MapGet("/api/products", (string? category, string? search) =>
-{
-    var result = products.AsEnumerable();
-    
-    if (!string.IsNullOrEmpty(category) && category != "All")
+    try
     {
-        result = result.Where(p => p.Category.Equals(category, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrEmpty(search))
+        {
+            // Use search endpoint
+            var searchRequest = new SearchProductsRequest
+            {
+                Query = search,
+                Limit = pageSize ?? 50
+            };
+            var response = await pgApiClient.SearchProductsAsync(searchRequest);
+            return Results.Ok(MapProducts(response.Products, category));
+        }
+        else
+        {
+            // Use list endpoint with pagination
+            var listRequest = new ListProductsRequest
+            {
+                Page = page ?? 1,
+                PageSize = pageSize ?? 50
+            };
+            var response = await pgApiClient.ListProductsAsync(listRequest);
+            return Results.Ok(new ProductListResult(MapProducts(response.Products, category), response.TotalCount));
+        }
     }
-    
-    if (!string.IsNullOrEmpty(search))
+    catch (Exception ex)
     {
-        result = result.Where(p => 
-            p.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-            p.Description.Contains(search, StringComparison.OrdinalIgnoreCase));
+        return Results.Problem($"Failed to fetch products: {ex.Message}");
     }
-    
-    return result.ToList();
 }).WithName("GetProducts");
 
-app.MapGet("/api/products/{id:int}", (int id) =>
+app.MapGet("/api/products/{id}", async (string id, ProductService.ProductServiceClient pgApiClient) =>
 {
-    var product = products.FirstOrDefault(p => p.Id == id);
-    return product is null ? Results.NotFound() : Results.Ok(product);
+    try
+    {
+        var request = new GetProductRequest { ArticleId = id };
+        var response = await pgApiClient.GetProductAsync(request);
+        return response.Product is null ? Results.NotFound() : Results.Ok(MapProduct(response.Product));
+    }
+    catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.NotFound)
+    {
+        return Results.NotFound();
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Failed to fetch product: {ex.Message}");
+    }
 }).WithName("GetProductById");
 
-app.MapGet("/api/categories", () => categories).WithName("GetCategories");
+app.MapGet("/api/categories", () => new[] { "All", "Garment Upper body", "Garment Lower body", "Garment Full body", "Accessories", "Underwear", "Shoes", "Swimwear", "Unknown" }).WithName("GetCategories");
 
-app.MapPost("/api/search", (SearchRequest request) =>
+// Semantic Search endpoint - calls Nexus orchestrator
+app.MapPost("/api/search", async (SearchRequest request, SearchOrchestrator.SearchOrchestratorClient nexusClient, ProductService.ProductServiceClient pgApiClient) =>
 {
-    // This will eventually be replaced with semantic search
-    var result = products.Where(p =>
-        p.Name.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
-        p.Description.Contains(request.Query, StringComparison.OrdinalIgnoreCase)).ToList();
-    
-    return new SearchResponse(result, request.Query, result.Count);
+    try
+    {
+        // Call Nexus orchestrator for semantic search
+        var grpcRequest = new TextSearchRequest
+        {
+            Query = request.Query,
+            Limit = request.Limit ?? 20,
+            EnableReranking = request.EnableReranking ?? true
+        };
+
+        var grpcResponse = await nexusClient.SearchByTextAsync(grpcRequest);
+
+        // Get full product details from PgApi for the search results
+        var articleIds = grpcResponse.Results.Select(r => r.Id).ToList();
+        
+        List<Product> fullProducts = [];
+        if (articleIds.Count > 0)
+        {
+            var productsRequest = new GetProductsRequest();
+            productsRequest.ArticleIds.AddRange(articleIds);
+            var productsResponse = await pgApiClient.GetProductsAsync(productsRequest);
+            fullProducts = productsResponse.Products.ToList();
+        }
+
+        // Map results with full product data
+        var searchResults = grpcResponse.Results.Select(r =>
+        {
+            var fullProduct = fullProducts.FirstOrDefault(p => p.ArticleId == r.Id);
+            return new ProductSearchResult(
+                r.Id,
+                fullProduct?.ProdName ?? r.Name,
+                fullProduct?.DetailDesc ?? r.Description,
+                r.Score,
+                r.Rank,
+                fullProduct?.ProductGroupName ?? "Unknown",
+                fullProduct?.ColourGroupName ?? "",
+                fullProduct?.ProductTypeName ?? ""
+            );
+        }).ToList();
+
+        return Results.Ok(new SemanticSearchResponse(
+            searchResults,
+            grpcResponse.ProcessedQuery,
+            grpcResponse.TotalResults
+        ));
+    }
+    catch (Exception ex)
+    {
+        // Fallback to PgApi search if Nexus is unavailable
+        try
+        {
+            var searchRequest = new SearchProductsRequest
+            {
+                Query = request.Query,
+                Limit = request.Limit ?? 20
+            };
+            var response = await pgApiClient.SearchProductsAsync(searchRequest);
+            
+            var fallbackResults = response.Products.Select((p, i) => new ProductSearchResult(
+                p.ArticleId,
+                p.ProdName,
+                p.DetailDesc,
+                1.0f - (i * 0.05f),
+                i + 1,
+                p.ProductGroupName,
+                p.ColourGroupName,
+                p.ProductTypeName
+            )).ToList();
+
+            return Results.Ok(new SemanticSearchResponse(fallbackResults, request.Query, fallbackResults.Count));
+        }
+        catch
+        {
+            return Results.Problem($"Search failed: {ex.Message}");
+        }
+    }
 }).WithName("SemanticSearch");
 
 app.Run();
 
+// Helper methods
+static List<ProductDto> MapProducts(IEnumerable<Product> products, string? categoryFilter)
+{
+    var result = products.Select(MapProduct);
+    
+    if (!string.IsNullOrEmpty(categoryFilter) && categoryFilter != "All")
+    {
+        result = result.Where(p => p.ProductGroupName.Contains(categoryFilter, StringComparison.OrdinalIgnoreCase));
+    }
+    
+    return result.ToList();
+}
+
+static ProductDto MapProduct(Product p) => new(
+    p.ArticleId,
+    p.ProductCode,
+    p.ProdName,
+    p.DetailDesc,
+    p.ProductTypeName,
+    p.ProductGroupName,
+    p.ColourGroupName,
+    p.PerceivedColourMasterName,
+    p.GraphicalAppearanceName,
+    p.DepartmentName,
+    p.IndexName,
+    p.IndexGroupName,
+    p.SectionName,
+    p.GarmentGroupName
+);
+
 // Records for the API
-record Product(
-    int Id,
+record ProductDto(
+    string ArticleId,
+    int ProductCode,
     string Name,
     string Description,
-    decimal Price,
-    string Category,
-    string ImageUrl,
-    string[] Colors,
-    string[] Sizes,
-    double Rating,
-    int ReviewCount);
+    string ProductType,
+    string ProductGroupName,
+    string ColourGroupName,
+    string ColourMasterName,
+    string GraphicalAppearance,
+    string Department,
+    string IndexName,
+    string IndexGroupName,
+    string Section,
+    string GarmentGroup);
 
-record SearchRequest(string Query);
+record ProductListResult(List<ProductDto> Products, int TotalCount);
 
-record SearchResponse(List<Product> Products, string Query, int TotalResults);
+record SearchRequest(string Query, int? Limit = 20, bool? EnableReranking = true);
+
+record SemanticSearchResponse(List<ProductSearchResult> Products, string ProcessedQuery, int TotalResults);
+
+record ProductSearchResult(
+    string Id,
+    string Name,
+    string Description,
+    float Score,
+    int Rank,
+    string ProductGroup,
+    string Colour,
+    string ProductType);

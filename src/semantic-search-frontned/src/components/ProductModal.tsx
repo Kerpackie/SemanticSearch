@@ -1,5 +1,6 @@
-import { Product } from '../types';
+import {type Product, getProductImageUrl, PLACEHOLDER_IMAGE } from '../types';
 import './ProductModal.css';
+import { useState } from 'react';
 
 interface ProductModalProps {
   product: Product | null;
@@ -7,24 +8,11 @@ interface ProductModalProps {
 }
 
 export function ProductModal({ product, onClose }: ProductModalProps) {
+  const [imageError, setImageError] = useState(false);
+  
   if (!product) return null;
 
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<span key={i} className="star filled">★</span>);
-    }
-    if (hasHalfStar) {
-      stars.push(<span key="half" className="star half">★</span>);
-    }
-    for (let i = stars.length; i < 5; i++) {
-      stars.push(<span key={i} className="star">★</span>);
-    }
-    return stars;
-  };
+  const imageUrl = imageError ? PLACEHOLDER_IMAGE : getProductImageUrl(product.articleId);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -33,41 +21,49 @@ export function ProductModal({ product, onClose }: ProductModalProps) {
         
         <div className="modal-body">
           <div className="modal-image-section">
-            <img src={product.imageUrl} alt={product.name} className="modal-image" />
+            <img 
+              src={imageUrl} 
+              alt={product.name} 
+              className="modal-image"
+              onError={() => setImageError(true)}
+            />
           </div>
           
           <div className="modal-details">
-            <span className="modal-category">{product.category}</span>
+            <span className="modal-category">{product.productGroupName}</span>
             <h2 className="modal-title">{product.name}</h2>
             
-            <div className="modal-rating">
-              <span className="stars">{renderStars(product.rating)}</span>
-              <span className="rating-text">{product.rating} ({product.reviewCount} reviews)</span>
+            <div className="modal-meta-info">
+              <span className="meta-badge product-type">{product.productType}</span>
+              <span className="meta-badge garment-group">{product.garmentGroup}</span>
             </div>
             
-            <p className="modal-description">{product.description}</p>
+            <p className="modal-description">{product.description || 'No description available'}</p>
             
-            <div className="modal-price">${product.price.toFixed(2)}</div>
-            
-            <div className="modal-option">
-              <label>Color</label>
-              <div className="option-buttons">
-                {product.colors.map((color, i) => (
-                  <button key={i} className={`option-button ${i === 0 ? 'selected' : ''}`}>
-                    {color}
-                  </button>
-                ))}
+            <div className="modal-attributes">
+              <div className="attribute-row">
+                <label>Colour</label>
+                <span>{product.colourGroupName} ({product.colourMasterName})</span>
               </div>
-            </div>
-            
-            <div className="modal-option">
-              <label>Size</label>
-              <div className="option-buttons">
-                {product.sizes.map((size, i) => (
-                  <button key={i} className={`option-button ${i === 0 ? 'selected' : ''}`}>
-                    {size}
-                  </button>
-                ))}
+              <div className="attribute-row">
+                <label>Appearance</label>
+                <span>{product.graphicalAppearance}</span>
+              </div>
+              <div className="attribute-row">
+                <label>Department</label>
+                <span>{product.department}</span>
+              </div>
+              <div className="attribute-row">
+                <label>Section</label>
+                <span>{product.section}</span>
+              </div>
+              <div className="attribute-row">
+                <label>Index</label>
+                <span>{product.indexName} - {product.indexGroupName}</span>
+              </div>
+              <div className="attribute-row">
+                <label>Article ID</label>
+                <span className="article-id">{product.articleId}</span>
               </div>
             </div>
             

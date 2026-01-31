@@ -123,6 +123,67 @@
   color: #666;
   line-height: 1.6;
   margin: 0 0 20px 0;
+  font-size: 0.9rem;
+}
+
+.modal-meta-info {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.meta-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.meta-badge.product-type {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.meta-badge.garment-group {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.modal-attributes {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.attribute-row {
+  display: flex;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.attribute-row:last-child {
+  border-bottom: none;
+}
+
+.attribute-row label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 120px;
+  font-size: 0.85rem;
+}
+
+.attribute-row span {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.attribute-row .article-id {
+  font-family: monospace;
+  background: #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .modal-price {

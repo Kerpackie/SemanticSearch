@@ -7,11 +7,27 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- Server-side proto for the orchestrator service -->
         <Protobuf Include="Protos\greet.proto" GrpcServices="Server"/>
+        <Protobuf Include="Protos\search.proto" GrpcServices="Server"/>
+        
+        <!-- Client-side protos for calling downstream services -->
+        <Protobuf Include="Protos\embedding.proto" GrpcServices="Client"/>
+        <Protobuf Include="Protos\clip.proto" GrpcServices="Client"/>
+        <Protobuf Include="Protos\reranker.proto" GrpcServices="Client"/>
+        <Protobuf Include="Protos\product.proto" GrpcServices="Client"/>
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Grpc.AspNetCore" Version="2.64.0"/>
+        <PackageReference Include="Grpc.Net.Client" Version="2.71.0"/>
+        <PackageReference Include="Grpc.Net.ClientFactory" Version="2.71.0"/>
+        <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.71.0"/>
+        <PackageReference Include="Grpc.HealthCheck" Version="2.71.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SemanticSearch.ServiceDefaults\SemanticSearch.ServiceDefaults.csproj"/>
     </ItemGroup>
 
 </Project>

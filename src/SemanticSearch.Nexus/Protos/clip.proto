@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option csharp_namespace = "SemanticSearch.Nexus.Clients.Clip";
+
+package clip;
+
+// The CLIP service definition - mirrors Eidolon's service
+service ClipEmbedder {
+  // Generates an embedding for a single text query
+  rpc EmbedText(EmbedTextRequest) returns (EmbedResponse);
+  
+  // Generates an embedding for a single image query
+  rpc EmbedImage(EmbedImageRequest) returns (EmbedResponse);
+}
+
+message Embedding {
+  repeated float values = 1;
+}
+
+message EmbedTextRequest {
+  string text = 1;
+}
+
+message EmbedImageRequest {
+  bytes image = 1;
+}
+
+message EmbedResponse {
+  Embedding embedding = 1;
+}

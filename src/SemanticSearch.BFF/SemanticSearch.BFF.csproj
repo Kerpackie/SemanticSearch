@@ -7,7 +7,21 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- Client-side proto for calling Nexus orchestrator -->
+        <Protobuf Include="Protos\search.proto" GrpcServices="Client"/>
+        <Protobuf Include="Protos\product.proto" GrpcServices="Client"/>
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0"/>
+        <PackageReference Include="Grpc.Net.Client" Version="2.71.0"/>
+        <PackageReference Include="Grpc.Net.ClientFactory" Version="2.71.0"/>
+        <PackageReference Include="Google.Protobuf" Version="3.31.1"/>
+        <PackageReference Include="Grpc.Tools" Version="2.71.0" PrivateAssets="All"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SemanticSearch.ServiceDefaults\SemanticSearch.ServiceDefaults.csproj"/>
     </ItemGroup>
 
 </Project>

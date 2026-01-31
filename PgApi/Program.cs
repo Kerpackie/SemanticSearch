@@ -1,10 +1,12 @@
-
 using PgApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Aspire defaults (includes AddHealthChecks with a "self" check)
 builder.AddServiceDefaults();
+
+// Add PostgreSQL data source from Aspire
+builder.AddNpgsqlDataSource("HM");
 
 // Services
 builder.Services.AddGrpc();
@@ -14,11 +16,12 @@ builder.Services.AddGrpcHealthChecks();
 
 var app = builder.Build();
 
-// Maps Aspire’s default HTTP health endpoints
+// Maps Aspire's default HTTP health endpoints
 app.MapDefaultEndpoints();
 
 // gRPC service + gRPC health service
 app.MapGrpcService<GreeterService>();
+app.MapGrpcService<ProductService>();
 app.MapGrpcHealthChecksService();
 
 app.MapGet("/",

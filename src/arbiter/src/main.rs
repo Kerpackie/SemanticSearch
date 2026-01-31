@@ -1,3 +1,4 @@
+use std::env;
 use std::sync::{Arc, Mutex};
 use tonic::transport::Server;
 use arbiter::reranker::model::RerankerModel;
@@ -26,7 +27,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         model: shared_model,
     };
 
-    let addr = "[::1]:50052".parse()?;
+    // Read port from GRPC_PORT env var (set by Aspire) or default to 50053
+    let port = env::var("GRPC_PORT").unwrap_or_else(|_| "50053".to_string());
+    let addr = format!("[::1]:{}", port).parse()?;
     println!("gRPC RerankerServer listening on {}", addr);
 
     // Set up the gRPC health checking service.

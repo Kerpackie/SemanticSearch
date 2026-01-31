@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option csharp_namespace = "SemanticSearch.Nexus.Clients.Glyph";
+
+package embedder;
+
+// The embedding service definition - mirrors Glyph's service
+service Embedder {
+  // Generates an embedding for a single text
+  rpc EmbedSingle(EmbedSingleRequest) returns (EmbedSingleResponse);
+}
+
+message Embedding {
+  repeated float values = 1;
+}
+
+message EmbedSingleRequest {
+  string text = 1;
+}
+
+message EmbedSingleResponse {
+  Embedding embedding = 1;
+}

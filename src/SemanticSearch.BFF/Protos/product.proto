@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+option csharp_namespace = "SemanticSearch.BFF.Clients";
+
+package product;
+
+// Product service for accessing H&M product data from PostgreSQL
+service ProductService {
+  // Get a single product by ID
+  rpc GetProduct (GetProductRequest) returns (ProductResponse);
+  
+  // Get multiple products by IDs
+  rpc GetProducts (GetProductsRequest) returns (ProductListResponse);
+  
+  // List products with pagination
+  rpc ListProducts (ListProductsRequest) returns (ProductListResponse);
+  
+  // Search products by name or description
+  rpc SearchProducts (SearchProductsRequest) returns (ProductListResponse);
+}
+
+message GetProductRequest {
+  string article_id = 1;
+}
+
+message GetProductsRequest {
+  repeated string article_ids = 1;
+}
+
+message ListProductsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message SearchProductsRequest {
+  string query = 1;
+  int32 limit = 2;
+}
+
+message ProductResponse {
+  Product product = 1;
+}
+
+message ProductListResponse {
+  repeated Product products = 1;
+  int32 total_count = 2;
+}
+
+message Product {
+  string article_id = 1;
+  int32 product_code = 2;
+  string prod_name = 3;
+  int32 product_type_no = 4;
+  string product_type_name = 5;
+  string product_group_name = 6;
+  int32 graphical_appearance_no = 7;
+  string graphical_appearance_name = 8;
+  int32 colour_group_code = 9;
+  string colour_group_name = 10;
+  int32 perceived_colour_value_id = 11;
+  string perceived_colour_value_name = 12;
+  int32 perceived_colour_master_id = 13;
+  string perceived_colour_master_name = 14;
+  int32 department_no = 15;
+  string department_name = 16;
+  string index_code = 17;
+  string index_name = 18;
+  int32 index_group_no = 19;
+  string index_group_name = 20;
+  int32 section_no = 21;
+  string section_name = 22;
+  int32 garment_group_no = 23;
+  string garment_group_name = 24;
+  string detail_desc = 25;
+}

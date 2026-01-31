@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option csharp_namespace = "SemanticSearch.Nexus.Clients.Arbiter";
+
+package reranker;
+
+// The reranker service definition - mirrors Arbiter's service
+service Reranker {
+  // Reranks a list of documents based on relevance to a query
+  rpc Rerank(RerankRequest) returns (RerankResponse);
+}
+
+message Document {
+  string id = 1;
+  string text = 2;
+}
+
+message RankedDocument {
+  string id = 1;
+  string text = 2;
+  float score = 3;
+  int32 rank = 4;
+}
+
+message RerankRequest {
+  string query = 1;
+  repeated Document documents = 2;
+  int32 top_k = 3;
+}
+
+message RerankResponse {
+  repeated RankedDocument results = 1;
+}

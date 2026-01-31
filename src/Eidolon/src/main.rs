@@ -4,6 +4,7 @@ mod utils;
 use crate::clipembedder::model::ClipEmbeddingModel;
 use crate::clipembedder::proto::{clip_embedder_server, ClipEmbedderServer};
 use crate::clipembedder::service::ClipEmbedderService;
+use std::env;
 use std::sync::{Arc, Mutex};
 use tonic::transport::Server;
 
@@ -22,7 +23,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         model: shared_model,
     };
 
-    let addr = "[::1]:50053".parse()?;
+    // Read port from GRPC_PORT env var (set by Aspire) or default to 50052
+    let port = env::var("GRPC_PORT").unwrap_or_else(|_| "50052".to_string());
+    let addr = format!("[::1]:{}", port).parse()?;
     println!("gRPC ClipEmbedderServer listening on {}", addr);
 
     let (health_reporter, health_service) = tonic_health::server::health_reporter();

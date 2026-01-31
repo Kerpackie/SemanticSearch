@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+option csharp_namespace = "SemanticSearch.Nexus";
+
+package search;
+
+// The main orchestration service for semantic search
+service SearchOrchestrator {
+  // Performs a complete semantic search pipeline:
+  // Query -> NLP (GptApi) -> Embeddings (Glyph & Eidolon) -> Database (Mneme) -> Reranking (Arbiter)
+  rpc Search (SearchRequest) returns (SearchResponse);
+  
+  // Performs a text-only semantic search
+  rpc SearchByText (TextSearchRequest) returns (SearchResponse);
+  
+  // Performs an image-based semantic search
+  rpc SearchByImage (ImageSearchRequest) returns (SearchResponse);
+}
+
+message SearchRequest {
+  string query = 1;
+  optional bytes image = 2;  // Optional image for multimodal search
+  int32 limit = 3;           // Number of results to return
+  bool enable_reranking = 4; // Whether to use the reranker
+}
+
+message TextSearchRequest {
+  string query = 1;
+  int32 limit = 2;
+  bool enable_reranking = 3;
+}
+
+message ImageSearchRequest {
+  bytes image = 1;
+  int32 limit = 2;
+  bool enable_reranking = 3;
+}
+
+message SearchResponse {
+  repeated SearchResult results = 1;
+  string processed_query = 2;  // The NLP-processed query
+  int32 total_results = 3;
+}
+
+message SearchResult {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  float score = 4;
+  int32 rank = 5;
+  map<string, string> metadata = 6;
+}

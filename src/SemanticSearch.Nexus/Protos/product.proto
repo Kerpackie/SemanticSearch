@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option csharp_namespace = "SemanticSearch.Nexus.Clients.Mneme";
+
+package product;
+
+// The product search service - mirrors Mneme's service
+service ProductSearch {
+  // Search for products using vector similarity
+  rpc SearchProducts (ProductSearchRequest) returns (ProductSearchResponse);
+}
+
+message ProductSearchRequest {
+  repeated float textVector = 1;
+  repeated float imageVector = 2;
+  int32 limit = 3;
+}
+
+message ProductSearchResponse {
+  repeated Product products = 1;
+}
+
+message Product {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  float score = 4;
+  map<string, string> metadata = 5;
+}

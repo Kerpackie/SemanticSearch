@@ -1,3 +1,4 @@
+use std::env;
 use std::sync::{Arc, Mutex};
 use tonic::transport::Server;
 use Glyph::embedder::model::EmbeddingModel;
@@ -22,7 +23,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         model: shared_model,
     };
 
-    let addr = "[::1]:50051".parse()?;
+    // Read port from GRPC_PORT env var (set by Aspire) or default to 50051
+    let port = env::var("GRPC_PORT").unwrap_or_else(|_| "50051".to_string());
+    let addr = format!("[::1]:{}", port).parse()?;
     println!("gRPC EmbedderServer listening on {}", addr);
 
     // Set up the gRPC health checking service.
