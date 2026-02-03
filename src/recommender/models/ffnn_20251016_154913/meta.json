@@ -1,0 +1,22 @@
+{
+  "cutoff_date": "2020-09-15 00:00:00",
+  "features": [
+    "user_avg_price",
+    "item_avg_price",
+    "recency_days",
+    "garment_group_name"
+  ],
+  "numerical_features": [
+    "user_avg_price",
+    "item_avg_price",
+    "recency_days"
+  ],
+  "categorical_features": [
+    "garment_group_name"
+  ],
+  "binary_features": [],
+  "batch_size": 4096,
+  "best_val_auc": 0.8469226360321045,
+  "train_auc": 0.8494919814512449,
+  "val_auc": 0.8469288089739639
+}

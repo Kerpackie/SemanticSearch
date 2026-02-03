@@ -1,6 +1,16 @@
 using PgApi.Services;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Kestrel to support HTTP/2 over plain HTTP (required for gRPC without TLS)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ConfigureEndpointDefaults(listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http2;
+    });
+});
 
 // Aspire defaults (includes AddHealthChecks with a "self" check)
 builder.AddServiceDefaults();

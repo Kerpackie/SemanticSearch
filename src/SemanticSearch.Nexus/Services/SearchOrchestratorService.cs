@@ -145,23 +145,36 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
         try
         {
             var httpClient = _httpClientFactory.CreateClient("GptApi");
-            var response = await httpClient.PostAsJsonAsync("/api/process-query", new { Query = query }, cancellationToken);
+            // Call the /suggest endpoint with { Request: string }
+            var response = await httpClient.PostAsJsonAsync("/suggest", new { Request = query }, cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<NlpResponse>(cancellationToken);
-                return result?.ProcessedQuery ?? query;
+                var result = await response.Content.ReadFromJsonAsync<OutfitSuggestionResponse>(cancellationToken);
+                if (result?.ItemsToPurchase != null && result.ItemsToPurchase.Count > 0)
+                {
+                    // Build a search query from the suggested items
+                    var itemNames = result.ItemsToPurchase.Select(i => $"{i.Color} {i.ItemName}").ToList();
+                    var processedQuery = string.Join(" ", itemNames);
+                    _logger.LogInformation("Outfit suggestion: {OutfitName} - searching for: {Items}", result.OutfitName, processedQuery);
+                    return processedQuery;
+                }
+                return query;
             }
             
-            _logger.LogWarning("NLP service returned {StatusCode}, using original query", response.StatusCode);
+            _logger.LogWarning("GptApi /suggest returned {StatusCode}, using original query", response.StatusCode);
             return query;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "NLP service unavailable, using original query");
+            _logger.LogWarning(ex, "GptApi /suggest unavailable, using original query");
             return query;
         }
     }
+
+    // Response models for GptApi /suggest endpoint
+    private record OutfitSuggestionResponse(string OutfitName, string StyleDescription, List<SuggestedItem> ItemsToPurchase);
+    private record SuggestedItem(string ItemName, string Color, string PriceRange, string Reasoning);
 
     private async Task<float[]> GetTextEmbedding(string text, CancellationToken cancellationToken)
     {
@@ -226,6 +239,4 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
             })
             .ToList();
     }
-
-    private record NlpResponse(string ProcessedQuery);
 }

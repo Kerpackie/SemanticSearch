@@ -3,8 +3,22 @@ using SemanticSearch.Nexus.Clients.Clip;
 using SemanticSearch.Nexus.Clients.Mneme;
 using SemanticSearch.Nexus.Clients.Arbiter;
 using SemanticSearch.Nexus.Services;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+
+// Enable HTTP/2 over plain HTTP (required for gRPC without TLS)
+AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Kestrel to support HTTP/2 over plain HTTP (required for gRPC without TLS)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // Allow HTTP/2 over plain HTTP for all endpoints
+    options.ConfigureEndpointDefaults(listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http2;
+    });
+});
 
 // Add Aspire service defaults (service discovery, health checks, telemetry)
 builder.AddServiceDefaults();
@@ -14,34 +28,65 @@ builder.Services.AddGrpc();
 builder.Services.AddGrpcHealthChecks();
 
 // Configure HTTP client for GptApi (NLP service)
+var gptApiUrl = builder.Configuration["services:gpt-api:http:0"] 
+                ?? builder.Configuration["services:gpt-api:https:0"]
+                ?? "http://localhost:5107";
 builder.Services.AddHttpClient("GptApi", client =>
 {
-    client.BaseAddress = new Uri("https+http://gpt-api");
+    client.BaseAddress = new Uri(gptApiUrl);
 });
 
 // Configure gRPC clients for downstream services
 // Glyph - Text embedding service
+var glyphUrl = builder.Configuration["services:glyph:http:0"] 
+               ?? builder.Configuration["services:glyph:https:0"]
+               ?? "http://localhost:50051";
 builder.Services.AddGrpcClient<Embedder.EmbedderClient>(options =>
 {
-    options.Address = new Uri("https+http://glyph");
+    options.Address = new Uri(glyphUrl);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    EnableMultipleHttp2Connections = true
 });
 
 // Eidolon - Image embedding service (CLIP)
+var eidolonUrl = builder.Configuration["services:eidolon:http:0"] 
+                 ?? builder.Configuration["services:eidolon:https:0"]
+                 ?? "http://localhost:50052";
 builder.Services.AddGrpcClient<ClipEmbedder.ClipEmbedderClient>(options =>
 {
-    options.Address = new Uri("https+http://eidolon");
+    options.Address = new Uri(eidolonUrl);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    EnableMultipleHttp2Connections = true
 });
 
 // Mneme - Vector database service
+var mnemeUrl = builder.Configuration["services:mneme-api:http:0"] 
+               ?? builder.Configuration["services:mneme-api:https:0"]
+               ?? "http://localhost:5108";
 builder.Services.AddGrpcClient<ProductSearch.ProductSearchClient>(options =>
 {
-    options.Address = new Uri("https+http://mneme-api");
+    options.Address = new Uri(mnemeUrl);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    EnableMultipleHttp2Connections = true
 });
 
 // Arbiter - Reranking service
+var arbiterUrl = builder.Configuration["services:arbiter:http:0"] 
+                 ?? builder.Configuration["services:arbiter:https:0"]
+                 ?? "http://localhost:50053";
 builder.Services.AddGrpcClient<Reranker.RerankerClient>(options =>
 {
-    options.Address = new Uri("https+http://arbiter");
+    options.Address = new Uri(arbiterUrl);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    EnableMultipleHttp2Connections = true
 });
 
 var app = builder.Build();

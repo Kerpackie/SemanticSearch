@@ -1,4 +1,12 @@
+using SemanticSearch.BFF.Clients;
+
+// Enable HTTP/2 over plain HTTP (required for gRPC without TLS)
+AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Aspire service defaults (service discovery, health checks, telemetry)
+builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddOpenApi();
@@ -12,6 +20,33 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure gRPC clients for downstream services
+// Nexus - Search orchestration service
+builder.Services.AddGrpcClient<SearchOrchestrator.SearchOrchestratorClient>(options =>
+{
+    var nexusUrl = builder.Configuration["services:nexus:http:0"] 
+                   ?? builder.Configuration["services:nexus:https:0"]
+                   ?? "http://localhost:5105";
+    options.Address = new Uri(nexusUrl);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    EnableMultipleHttp2Connections = true
+});
+
+// PgApi - Product service (PostgreSQL)
+builder.Services.AddGrpcClient<ProductService.ProductServiceClient>(options =>
+{
+    var pgApiUrl = builder.Configuration["services:pg-api:http:0"] 
+                   ?? builder.Configuration["services:pg-api:https:0"]
+                   ?? "http://localhost:5106";
+    options.Address = new Uri(pgApiUrl);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    EnableMultipleHttp2Connections = true
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -22,6 +57,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 app.UseHttpsRedirection();
+
+// Map Aspire default endpoints (health checks)
+app.MapDefaultEndpoints();
 
 // API Endpoints - now fetching from PostgreSQL via PgApi
 app.MapGet("/api/products", async (string? category, string? search, int? page, int? pageSize, ProductService.ProductServiceClient pgApiClient) =>

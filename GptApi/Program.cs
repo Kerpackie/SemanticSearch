@@ -3,6 +3,7 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 using System.ClientModel; 
 using System.ComponentModel;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,10 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 // Add services to the container.
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(); 
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Configure logging for better visibility in Aspire
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 // ==================================================================================
 // 1. CONFIGURATION
@@ -42,6 +47,11 @@ var config = currentProvider switch
     _ => throw new NotImplementedException()
 };
 
+// Log configuration at startup
+var startupLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("GptApi.Startup");
+startupLogger.LogInformation("GptApi starting with AI Provider: {Provider}, Model: {Model}, Endpoint: {Endpoint}", 
+    currentProvider, config.ModelId, config.Endpoint);
+
 // ==================================================================================
 // 2. DEPENDENCY INJECTION
 // ==================================================================================
@@ -68,8 +78,10 @@ var app = builder.Build();
 // 4. API ENDPOINTS
 // ==================================================================================
 
-app.MapPost("/suggest", async ([FromServices] IChatClient client, [FromBody] UserQuery query) =>
+app.MapPost("/suggest", async ([FromServices] IChatClient client, [FromServices] ILogger<Program> logger, [FromBody] UserQuery query) =>
 {
+    logger.LogInformation("Received /suggest request with query: {Query}", query.Request);
+    
     var prompt = $@"
         You are an expert personal stylist.
         The user has potentially provided a scenario and/or potentially items they already own: '{query.Request}'.
@@ -91,6 +103,8 @@ app.MapPost("/suggest", async ([FromServices] IChatClient client, [FromBody] Use
         Respond with ONLY a JSON object. No reasoning, no code blocks.
     ";
 
+    logger.LogDebug("Sending prompt to AI: {Prompt}", prompt);
+
     // Call AI with Structured Output
     // This sends the Schema for OutfitResponse to LM Studio.
     // Ensure your LM Studio version supports "Structured Output" or "JSON Mode" 
@@ -98,11 +112,16 @@ app.MapPost("/suggest", async ([FromServices] IChatClient client, [FromBody] Use
     // Pass NULL for options to remove 'response_format' and 'strict' flags
     var response = await client.CompleteAsync(prompt, options: null);
 
+    logger.LogInformation("Received AI response: {Response}", response.Message.Text);
+
     // Manually parse the text
     var result = System.Text.Json.JsonSerializer.Deserialize<OutfitResponse>(
         response.Message.Text, 
         new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
     );
+
+    logger.LogInformation("Parsed outfit response: {OutfitName} with {ItemCount} items to purchase", 
+        result?.OutfitName, result?.ItemsToPurchase?.Count ?? 0);
 
     return Results.Ok(result);
 });
