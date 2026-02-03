@@ -125,7 +125,8 @@ app.MapPost("/api/search", async (SearchRequest request, SearchOrchestrator.Sear
         {
             Query = request.Query,
             Limit = request.Limit ?? 20,
-            EnableReranking = request.EnableReranking ?? true
+            EnableReranking = request.EnableReranking ?? true,
+            CustomerId = request.CustomerId ?? ""
         };
 
         var grpcResponse = await nexusClient.SearchByTextAsync(grpcRequest);
@@ -247,7 +248,7 @@ record ProductDto(
 
 record ProductListResult(List<ProductDto> Products, int TotalCount);
 
-record SearchRequest(string Query, int? Limit = 20, bool? EnableReranking = true);
+record SearchRequest(string Query, int? Limit = 20, bool? EnableReranking = true, string? CustomerId = null);
 
 record SemanticSearchResponse(List<ProductSearchResult> Products, string ProcessedQuery, int TotalResults);
 

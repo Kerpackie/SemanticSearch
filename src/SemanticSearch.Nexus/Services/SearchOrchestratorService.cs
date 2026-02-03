@@ -74,7 +74,7 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
 
             if (request.EnableReranking && results.Count > 0)
             {
-                results = await RerankResults(processedQuery, results, request.Limit, context.CancellationToken);
+                results = await RerankResults(processedQuery, results, request.Limit, request.CustomerId, context.CancellationToken);
                 _logger.LogInformation("Reranked {Count} results", results.Count);
             }
 
@@ -98,7 +98,8 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
         {
             Query = request.Query,
             Limit = request.Limit,
-            EnableReranking = request.EnableReranking
+            EnableReranking = request.EnableReranking,
+            CustomerId = request.CustomerId
         }, context);
     }
 
@@ -203,7 +204,7 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
         return response.Products.ToList();
     }
 
-    private async Task<List<SearchResult>> RerankResults(string query, List<SearchResult> results, int limit, CancellationToken cancellationToken)
+    private async Task<List<SearchResult>> RerankResults(string query, List<SearchResult> results, int limit, string? customerId, CancellationToken cancellationToken)
     {
         var documents = results.Select(r => new Document
         {
@@ -218,25 +219,120 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
         };
         request.Documents.AddRange(documents);
 
-        var response = await _arbiterClient.RerankAsync(request, cancellationToken: cancellationToken);
+        // Get Arbiter reranking scores
+        var arbiterResponse = await _arbiterClient.RerankAsync(request, cancellationToken: cancellationToken);
+        var arbiterScores = arbiterResponse.Results.ToDictionary(r => r.Id, r => r.Score);
 
-        // Map back to SearchResult with updated scores and ranks
+        // Get recommender scores if customer is logged in
+        Dictionary<string, float>? recommenderScores = null;
+        if (!string.IsNullOrEmpty(customerId))
+        {
+            recommenderScores = await GetRecommenderScores(customerId, results, cancellationToken);
+        }
+
+        // Combine scores and create final results
         var resultMap = results.ToDictionary(r => r.Id);
-        return response.Results
-            .Where(r => resultMap.ContainsKey(r.Id))
-            .Select(r =>
+        var combinedResults = new List<(SearchResult result, float finalScore)>();
+
+        foreach (var arbiterResult in arbiterResponse.Results)
+        {
+            if (!resultMap.ContainsKey(arbiterResult.Id)) continue;
+
+            var original = resultMap[arbiterResult.Id];
+            float arbiterScore = arbiterResult.Score;
+            float finalScore;
+
+            if (recommenderScores != null && recommenderScores.TryGetValue(arbiterResult.Id, out var recommenderScore))
             {
-                var original = resultMap[r.Id];
-                return new SearchResult
-                {
-                    Id = r.Id,
-                    Name = original.Name,
-                    Description = original.Description,
-                    Score = r.Score,
-                    Rank = r.Rank,
-                    Metadata = { original.Metadata }
-                };
+                // Combine arbiter and recommender scores (60% arbiter, 40% recommender)
+                finalScore = (0.6f * arbiterScore) + (0.4f * recommenderScore);
+                _logger.LogDebug("Product {Id}: Arbiter={ArbiterScore:F3}, Recommender={RecommenderScore:F3}, Final={FinalScore:F3}", 
+                    arbiterResult.Id, arbiterScore, recommenderScore, finalScore);
+            }
+            else
+            {
+                // Use only arbiter score if no recommender score available
+                finalScore = arbiterScore;
+            }
+
+            combinedResults.Add((original, finalScore));
+        }
+
+        // Sort by final score and assign ranks
+        var rankedResults = combinedResults
+            .OrderByDescending(r => r.finalScore)
+            .Select((r, index) => new SearchResult
+            {
+                Id = r.result.Id,
+                Name = r.result.Name,
+                Description = r.result.Description,
+                Score = r.finalScore,
+                Rank = index + 1,
+                Metadata = { r.result.Metadata }
             })
             .ToList();
+
+        return rankedResults;
     }
+
+    private async Task<Dictionary<string, float>?> GetRecommenderScores(string customerId, List<SearchResult> results, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var httpClient = _httpClientFactory.CreateClient("Recommender");
+            
+            // Extract article IDs from results (assuming they are numeric)
+            var articleIds = results
+                .Select(r => int.TryParse(r.Id, out var id) ? (int?)id : null)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToList();
+
+            if (articleIds.Count == 0)
+            {
+                _logger.LogWarning("No valid article IDs for recommender scoring");
+                return null;
+            }
+
+            var requestBody = new
+            {
+                customer_id = customerId,
+                article_ids = articleIds
+            };
+
+            var response = await httpClient.PostAsJsonAsync("/score", requestBody, cancellationToken);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Recommender service returned {StatusCode}, falling back to arbiter-only scoring", response.StatusCode);
+                return null;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<RecommenderScoreResponse>(cancellationToken);
+            
+            if (result?.Scores == null || result.Scores.Count == 0)
+            {
+                _logger.LogWarning("Recommender returned no scores");
+                return null;
+            }
+
+            // Convert to dictionary with string keys to match result IDs
+            var scoreDict = result.Scores.ToDictionary(
+                s => s.ArticleId.ToString(), 
+                s => s.Score
+            );
+
+            _logger.LogInformation("Got recommender scores for {Count} products", scoreDict.Count);
+            return scoreDict;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get recommender scores, falling back to arbiter-only scoring");
+            return null;
+        }
+    }
+
+    // Response models for Recommender API
+    private record RecommenderScoreResponse(string CustomerId, List<ScoredArticle> Scores);
+    private record ScoredArticle(int ArticleId, float Score);
 }

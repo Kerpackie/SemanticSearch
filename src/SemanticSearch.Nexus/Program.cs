@@ -36,6 +36,15 @@ builder.Services.AddHttpClient("GptApi", client =>
     client.BaseAddress = new Uri(gptApiUrl);
 });
 
+// Configure HTTP client for Recommender service
+var recommenderUrl = builder.Configuration["services:recommender:http:0"] 
+                     ?? builder.Configuration["services:recommender:https:0"]
+                     ?? "http://localhost:8000";
+builder.Services.AddHttpClient("Recommender", client =>
+{
+    client.BaseAddress = new Uri(recommenderUrl);
+});
+
 // Configure gRPC clients for downstream services
 // Glyph - Text embedding service
 var glyphUrl = builder.Configuration["services:glyph:http:0"] 

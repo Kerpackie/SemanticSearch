@@ -22,18 +22,21 @@ message SearchRequest {
   optional bytes image = 2;  // Optional image for multimodal search
   int32 limit = 3;           // Number of results to return
   bool enable_reranking = 4; // Whether to use the reranker
+  optional string customer_id = 5; // Optional customer ID for personalized reranking
 }
 
 message TextSearchRequest {
   string query = 1;
   int32 limit = 2;
   bool enable_reranking = 3;
+  optional string customer_id = 4; // Optional customer ID for personalized reranking
 }
 
 message ImageSearchRequest {
   bytes image = 1;
   int32 limit = 2;
   bool enable_reranking = 3;
+  optional string customer_id = 4; // Optional customer ID for personalized reranking
 }
 
 message SearchResponse {

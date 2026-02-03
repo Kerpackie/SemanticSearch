@@ -34,6 +34,10 @@ var eidolon = builder.AddExecutable("eidolon", "cargo", "../Eidolon", "run", "--
 var arbiter = builder.AddExecutable("arbiter", "cargo", "../arbiter", "run", "--release", "--bin", "arbiter")
     .WithHttpEndpoint(port: 50053, name: "grpc", env: "GRPC_PORT");
 
+// Recommender - Personalized recommendation service (Python/FastAPI)
+var recommender = builder.AddExecutable("recommender", "bash", "../recommender", "run_recommender.sh")
+    .WithHttpEndpoint(port: 8000, name: "http", env: "PORT");
+
 // =============================================================================
 // .NET Services
 // =============================================================================
@@ -71,6 +75,7 @@ var nexus = builder.AddProject<Projects.SemanticSearch_Nexus>("nexus")
     .WithReference(glyph.GetEndpoint("grpc"))
     .WithReference(eidolon.GetEndpoint("grpc"))
     .WithReference(arbiter.GetEndpoint("grpc"))
+    .WithReference(recommender.GetEndpoint("http"))
     .WaitFor(gptApi)
     .WaitFor(mnemeApi);
 
