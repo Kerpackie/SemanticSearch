@@ -214,18 +214,32 @@ app.MapPost("/api/outfit-search", async (OutfitSearchRequest request, SearchOrch
             CustomerId = request.CustomerId ?? ""
         };
 
-        logger.LogInformation("Calling Nexus with limit: 100");
+        logger.LogInformation("Calling Nexus with limit: 100, EnableReranking: TRUE");
         var grpcResponse = await nexusClient.SearchByTextAsync(grpcRequest);
         logger.LogInformation("Nexus returned {Count} results, TotalResults: {Total}", 
             grpcResponse.Results.Count, grpcResponse.TotalResults);
 
-        // Log first few IDs to see the format
+        // Log first few IDs and SCORES to see if reranking actually happened
         if (grpcResponse.Results.Count > 0)
         {
-            logger.LogInformation("Sample IDs from Nexus (first 5):");
+            logger.LogInformation("Sample results from Nexus (first 5 with SCORES):");
             foreach (var result in grpcResponse.Results.Take(5))
             {
-                logger.LogInformation("  - ID: {Id}, Name: {Name}", result.Id, result.Name);
+                logger.LogInformation("  - ID: {Id}, Name: {Name}, SCORE: {Score:F4}", 
+                    result.Id, result.Name, result.Score);
+            }
+            
+            // Check score distribution
+            var avgScore = grpcResponse.Results.Average(r => r.Score);
+            var maxScore = grpcResponse.Results.Max(r => r.Score);
+            var minScore = grpcResponse.Results.Min(r => r.Score);
+            logger.LogInformation("Score stats - Avg: {Avg:F4}, Max: {Max:F4}, Min: {Min:F4}", 
+                avgScore, maxScore, minScore);
+                
+            if (maxScore < 0.6f)
+            {
+                logger.LogWarning("⚠️ WARNING: All scores below 0.6! Reranking might have FAILED!");
+                logger.LogWarning("⚠️ This looks like raw vector similarity, not cross-encoder scores!");
             }
         }
 
@@ -350,7 +364,7 @@ static Dictionary<string, SlotData> CategorizeIntoSlots(
         }
 
         var recommendation = new RecommendationDto(
-            result.Id,
+            articleId, // Use the actual article ID, not the document UUID
             fullProduct?.ProdName ?? result.Name,
             fullProduct?.DetailDesc ?? result.Description,
             result.Score,
@@ -498,6 +512,14 @@ static Dictionary<string, SlotData> CategorizeIntoSlots(
     foreach (var (slotName, slotData) in slots)
     {
         Console.WriteLine($"  - {slotName}: {slotData.Recommendations.Count} items");
+        if (slotData.Recommendations.Count > 0)
+        {
+            Console.WriteLine($"    First item: {slotData.Recommendations[0].Name} (Score: {slotData.Recommendations[0].Score})");
+            if (slotData.Recommendations.Count > 1)
+            {
+                Console.WriteLine($"    Last item: {slotData.Recommendations[slotData.Recommendations.Count - 1].Name} (Score: {slotData.Recommendations[slotData.Recommendations.Count - 1].Score})");
+            }
+        }
     }
 
     // Keep only top 10 for each slot and remove empty slots

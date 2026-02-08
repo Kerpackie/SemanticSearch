@@ -78,6 +78,22 @@ export async function outfitSearch(query: string, customerId?: string): Promise<
   
   const data = await response.json();
   console.log('[API] Response data:', data);
+  console.log('[API] Response data.slots type:', typeof data.slots);
+  console.log('[API] Response data.slots keys:', Object.keys(data.slots || {}));
+  
+  // Log each slot's details
+  if (data.slots) {
+    Object.entries(data.slots).forEach(([slotName, slotData]: [string, any]) => {
+      console.log(`[API] Slot "${slotName}":`, {
+        slotType: slotData.slotType,
+        recommendationsCount: slotData.recommendations?.length || 0,
+        reasoning: slotData.reasoning
+      });
+      if (slotData.recommendations && slotData.recommendations.length > 0) {
+        console.log(`[API]   First recommendation:`, slotData.recommendations[0]);
+      }
+    });
+  }
   
   return data;
 }

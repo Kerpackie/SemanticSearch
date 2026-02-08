@@ -52,6 +52,12 @@ export function OutfitSlot({ slotType, slotData, isExpanded, onToggle, onProduct
   const info = SLOT_INFO[slotType];
   const itemCount = slotData.recommendations.length;
 
+  console.log(`[OutfitSlot] ${slotType}:`, {
+    itemCount,
+    isExpanded,
+    recommendations: slotData.recommendations
+  });
+
   return (
     <div className={`outfit-slot ${isExpanded ? 'expanded' : 'collapsed'}`}>
       <div className="slot-header" onClick={onToggle}>

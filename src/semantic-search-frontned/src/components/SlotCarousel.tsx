@@ -15,6 +15,12 @@ export function SlotCarousel({ recommendations, onProductClick }: SlotCarouselPr
   const [scrollLeft, setScrollLeft] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
+  console.log('[SlotCarousel] Rendering with', recommendations.length, 'recommendations');
+  if (recommendations.length > 0) {
+    console.log('[SlotCarousel] First recommendation:', recommendations[0]);
+    console.log('[SlotCarousel] All recommendation IDs:', recommendations.map(r => r.id));
+  }
+
   const visibleCards = 3; // Show 3 cards at a time on desktop
   const maxIndex = Math.max(0, recommendations.length - visibleCards);
 
