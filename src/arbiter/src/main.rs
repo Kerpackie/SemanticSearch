@@ -4,9 +4,19 @@ use tonic::transport::Server;
 use arbiter::reranker::model::RerankerModel;
 use arbiter::reranker::proto::RerankerServer;
 use arbiter::reranker::service::RerankerService;
+use tracing_subscriber;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize tracing subscriber for structured logging
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_target(false)
+        .with_thread_ids(false)
+        .with_line_number(true)
+        .init();
+
+    tracing::info!("Initializing reranker model and device...");
     println!("Initializing reranker model and device...");
     // Initialize the reranker model.
     // Using cross-encoder/ms-marco-MiniLM-L-6-v2 - fast and good quality for semantic search reranking.
@@ -14,6 +24,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // - "cross-encoder/ms-marco-MiniLM-L-12-v2" for better quality
     // - "cross-encoder/ms-marco-TinyBERT-L-2-v2" for faster inference
     let model = RerankerModel::new("cross-encoder/ms-marco-MiniLM-L-6-v2")?;
+    tracing::info!(
+        device = ?model.device.location(),
+        "Reranker model loaded successfully"
+    );
     println!(
         "Reranker model loaded successfully on device: {:?}.",
         model.device.location()
@@ -30,6 +44,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Read port from GRPC_PORT env var (set by Aspire) or default to 50053
     let port = env::var("GRPC_PORT").unwrap_or_else(|_| "50053".to_string());
     let addr = format!("[::1]:{}", port).parse()?;
+    tracing::info!(
+        address = %addr,
+        port = %port,
+        "gRPC RerankerServer starting"
+    );
     println!("gRPC RerankerServer listening on {}", addr);
 
     // Set up the gRPC health checking service.

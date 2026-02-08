@@ -4,6 +4,7 @@ use candle_transformers::models::bert::{BertModel, Config, DTYPE};
 use hf_hub::{api::sync::Api, Repo, RepoType};
 use tokenizers::Tokenizer;
 use anyhow::{Error as E, Result};
+use tracing::{info, debug};
 
 /// A reranker model for scoring query-document relevance.
 /// Uses a cross-encoder architecture (BERT-based) that takes query-document pairs
@@ -63,8 +64,15 @@ impl RerankerModel {
     /// Returns relevance scores where higher = more relevant.
     pub fn score_pairs(&self, query: &str, documents: &[String]) -> Result<Vec<f32>> {
         if documents.is_empty() {
+            debug!("No documents to score");
             return Ok(vec![]);
         }
+
+        debug!(
+            num_documents = documents.len(),
+            query_len = query.len(),
+            "Starting batch scoring"
+        );
 
         let mut tokenizer = self.tokenizer.clone();
 
@@ -92,10 +100,12 @@ impl RerankerModel {
             .map(|doc| (query.to_string(), doc.clone()))
             .collect();
 
+        debug!("Tokenizing {} query-document pairs", pairs.len());
         let tokens = tokenizer
             .encode_batch(pairs, true)
             .map_err(E::msg)?;
 
+        debug!("Building input tensors");
         let token_ids: Vec<Tensor> = tokens
             .iter()
             .map(|tokens| Tensor::new(tokens.get_ids(), &self.device))
@@ -117,12 +127,13 @@ impl RerankerModel {
         let attention_mask = Tensor::stack(&attention_mask, 0)?;
 
         // Run the model
+        debug!("Running BERT model forward pass");
         let embeddings = self
             .model
             .forward(&token_ids, &token_type_ids, Some(&attention_mask))?;
 
         // Debug: print tensor shapes
-        eprintln!("embeddings shape: {:?}", embeddings.shape());
+        debug!("embeddings shape: {:?}", embeddings.shape());
 
         // For rerankers, we use the [CLS] token's output (position 0 in sequence)
         // embeddings shape: [batch_size, seq_len, hidden_size]
@@ -130,28 +141,41 @@ impl RerankerModel {
         let (batch_size, _seq_len, hidden_size) = embeddings.dims3()?;
         let cls_output = embeddings.narrow(1, 0, 1)?.reshape((batch_size, hidden_size))?;
         
-        eprintln!("cls_output shape: {:?}", cls_output.shape());
+        debug!("cls_output shape: {:?}", cls_output.shape());
 
         // Pass through the classifier head to get relevance logits
         let logits = self.classifier.forward(&cls_output)?; // Shape: [batch_size, 1]
         
-        eprintln!("logits shape: {:?}", logits.shape());
+        debug!("logits shape: {:?}", logits.shape());
         
         let logits = logits.squeeze(1)?; // Shape: [batch_size]
         
         // Get the raw scores
         let scores = logits.to_vec1::<f32>()?;
 
+        debug!("Raw logits computed: {:?}", scores);
+
         // Apply sigmoid to convert logits to probabilities (0-1 range)
         let scores: Vec<f32> = scores.iter().map(|&x| sigmoid(x)).collect();
+
+        info!(
+            num_scores = scores.len(),
+            min_score = scores.iter().cloned().fold(f32::INFINITY, f32::min),
+            max_score = scores.iter().cloned().fold(f32::NEG_INFINITY, f32::max),
+            avg_score = scores.iter().sum::<f32>() / scores.len() as f32,
+            "Batch scoring completed"
+        );
 
         Ok(scores)
     }
 
     /// Scores a single query-document pair.
     pub fn score_single(&self, query: &str, document: &str) -> Result<f32> {
+        debug!("Scoring single query-document pair");
         let scores = self.score_pairs(query, &[document.to_string()])?;
-        scores.into_iter().next().ok_or_else(|| E::msg("No score returned"))
+        let score = scores.into_iter().next().ok_or_else(|| E::msg("No score returned"))?;
+        debug!(score = %score, "Single pair score computed");
+        Ok(score)
     }
 }
 
