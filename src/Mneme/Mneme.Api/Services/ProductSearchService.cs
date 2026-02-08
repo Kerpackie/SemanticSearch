@@ -134,7 +134,8 @@ public class ProductSearchService : ProductSearch.ProductSearchBase
                     CollectionName, 
                     request.ImageVector.ToArray(),
                     vectorName: "image", 
-                    limit: (ulong)request.Limit
+                    limit: (ulong)request.Limit,
+                    payloadSelector: true
                 );
             }
             else
@@ -144,13 +145,18 @@ public class ProductSearchService : ProductSearch.ProductSearchBase
                     CollectionName, 
                     request.TextVector.ToArray(),
                     vectorName: "text", 
-                    limit: (ulong)request.Limit
+                    limit: (ulong)request.Limit,
+                    payloadSelector: true
                 );
             }
             
+            Console.WriteLine($"[Mneme] Search returned {searchResult.Count} results");
+
             foreach (var point in searchResult)
             {
                 var p = new Product { Id = point.Id.Uuid, Score = point.Score };
+                
+                Console.WriteLine($"[Mneme] Point {point.Id.Uuid} has {point.Payload.Count} payload keys: [{string.Join(", ", point.Payload.Keys)}]");
                 
                 if (point.Payload.TryGetValue("name", out var n)) p.Name = n.StringValue;
                 if (point.Payload.TryGetValue("description", out var d)) p.Description = d.StringValue;
@@ -160,6 +166,8 @@ public class ProductSearchService : ProductSearch.ProductSearchBase
                    if (kvp.Value.KindCase == Value.KindOneofCase.StringValue)
                        p.Metadata.TryAdd(kvp.Key, kvp.Value.StringValue);
                 }
+                
+                Console.WriteLine($"[Mneme] Product {p.Id} metadata has {p.Metadata.Count} entries");
 
                 response.Products.Add(p);
             }

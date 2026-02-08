@@ -377,5 +377,28 @@ async def recommend_top_k(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    
+    # Get port from environment variable (set by Aspire) or default to 8000
+    port = int(os.environ.get("PORT", 8000))
+    
+    print(f"=" * 60)
+    print(f"Starting FFNN Recommendation API on port {port}")
+    print(f"=" * 60)
+    
+    # Set environment variables to help with TensorFlow stability
+    os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+    os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
+    os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
+    
+    try:
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+    except Exception as e:
+        print(f"Failed to start API: {e}")
+        print("\nIf you're getting segmentation faults with TensorFlow:")
+        print("1. Try: pip3 uninstall tensorflow && pip3 install tensorflow-macos")
+        print("2. Or use a different Python version")
+        print("3. Or run in a virtual environment")
+        import sys
+        sys.exit(1)
 

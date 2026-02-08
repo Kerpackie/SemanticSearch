@@ -30,7 +30,7 @@ class Program
     const string ImagesRootPath = "/Users/kerpackie/Downloads/h-and-m-personalized-fashion-recommendations/images"; 
     
     const string TextEmbedderUrl = "http://localhost:50051"; 
-    const string ImageEmbedderUrl = "http://localhost:50053"; 
+    const string ImageEmbedderUrl = "http://localhost:50052"; 
     const string MnemeUrl = "http://localhost:5074"; 
     
     // --- CONFIGURATION ---
@@ -39,7 +39,7 @@ class Program
 
     // SKIP CONFIGURATION: Change this to resume processing
     // e.g. Set to 5000 to skip the first 5000 rows
-    const int StartFromIndex = 88150; 
+    const int StartFromIndex = 0; 
 
     static SemaphoreSlim _concurrencyLimit = new SemaphoreSlim(MaxConcurrentBatches);
     static int _totalProcessed = 0;
@@ -113,6 +113,7 @@ class Program
                 Description = row.DetailDesc,
                 Metadata = new Dictionary<string, string>
                 {
+                    { "article_id", row.ArticleId },
                     { "color", row.Color },
                     { "type", row.Type },
                     { "pattern", row.Pattern },

@@ -46,13 +46,16 @@ app.MapPost("/products/search", async (ProductSearch.ProductSearchClient client,
 
         var reply = await client.SearchProductsAsync(req);
 
-        // Shape the response nicely for HTTP callers
+        // Shape the response nicely for HTTP callers, including metadata
         var result = reply.Products.Select(p => new
         {
             p.Id,
             p.Name,
             p.Description,
-            p.Score
+            p.Score,
+            Metadata = p.Metadata.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+            HasArticleId = p.Metadata.ContainsKey("article_id"),
+            ArticleId = p.Metadata.TryGetValue("article_id", out var aid) ? aid : null
         });
 
         return Results.Ok(result);
@@ -63,4 +66,4 @@ app.MapPost("/products/search", async (ProductSearch.ProductSearchClient client,
 app.Run();
 
 // Simple request DTO for the HTTP endpoint
-public sealed record SearchDto(float[] TextVector, float[] ImageVector, int Limit);
+public sealed record SearchDto(float[]? TextVector, float[]? ImageVector, int Limit);
