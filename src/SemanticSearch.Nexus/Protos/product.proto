@@ -25,5 +25,7 @@ message Product {
   string name = 2;
   string description = 3;
   float score = 4;
-  map<string, string> metadata = 5;
+  repeated float textVector = 5;
+  repeated float imageVector = 6;
+  map<string, string> metadata = 7;
 }

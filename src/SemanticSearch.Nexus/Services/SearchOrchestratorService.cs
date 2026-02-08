@@ -62,15 +62,30 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
             _logger.LogInformation("Found {Count} products from database", products.Count);
 
             // Step 5: Rerank results via Arbiter (if enabled)
-            var results = products.Select((p, i) => new SearchResult
+            var results = products.Select((p, i) =>
             {
-                Id = p.Id,
-                Name = p.Name,
-                Description = p.Description,
-                Score = p.Score,
-                Rank = i + 1,
-                Metadata = { p.Metadata }
+                var result = new SearchResult
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Score = p.Score,
+                    Rank = i + 1
+                };
+                foreach (var kvp in p.Metadata)
+                {
+                    result.Metadata[kvp.Key] = kvp.Value;
+                }
+                _logger.LogDebug("Product {Id} has {MetadataCount} metadata entries", p.Id, result.Metadata.Count);
+                return result;
             }).ToList();
+
+            if (results.Count > 0)
+            {
+                var sampleResult = results[0];
+                _logger.LogInformation("First result {Id} has {Count} metadata keys: [{Keys}]", 
+                    sampleResult.Id, sampleResult.Metadata.Count, string.Join(", ", sampleResult.Metadata.Keys));
+            }
 
             if (request.EnableReranking && results.Count > 0)
             {
@@ -117,14 +132,21 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
             var products = await SearchProducts([], imageEmbedding, request.Limit, context.CancellationToken);
             _logger.LogInformation("Found {Count} products from database", products.Count);
 
-            var results = products.Select((p, i) => new SearchResult
+            var results = products.Select((p, i) =>
             {
-                Id = p.Id,
-                Name = p.Name,
-                Description = p.Description,
-                Score = p.Score,
-                Rank = i + 1,
-                Metadata = { p.Metadata }
+                var result = new SearchResult
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Score = p.Score,
+                    Rank = i + 1
+                };
+                foreach (var kvp in p.Metadata)
+                {
+                    result.Metadata[kvp.Key] = kvp.Value;
+                }
+                return result;
             }).ToList();
 
             return new SearchResponse
@@ -261,14 +283,21 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
         // Sort by final score and assign ranks
         var rankedResults = combinedResults
             .OrderByDescending(r => r.finalScore)
-            .Select((r, index) => new SearchResult
+            .Select((r, index) =>
             {
-                Id = r.result.Id,
-                Name = r.result.Name,
-                Description = r.result.Description,
-                Score = r.finalScore,
-                Rank = index + 1,
-                Metadata = { r.result.Metadata }
+                var result = new SearchResult
+                {
+                    Id = r.result.Id,
+                    Name = r.result.Name,
+                    Description = r.result.Description,
+                    Score = r.finalScore,
+                    Rank = index + 1
+                };
+                foreach (var kvp in r.result.Metadata)
+                {
+                    result.Metadata[kvp.Key] = kvp.Value;
+                }
+                return result;
             })
             .ToList();
 
@@ -281,16 +310,45 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
         {
             var httpClient = _httpClientFactory.CreateClient("Recommender");
             
-            // Extract article IDs from results (assuming they are numeric)
+            _logger.LogInformation("GetRecommenderScores called with {Count} results", results.Count);
+            
+            // Log metadata for ALL results to diagnose the issue
+            var resultsWithArticleId = 0;
+            var resultsWithoutArticleId = 0;
+            
+            foreach (var searchResult in results)
+            {
+                if (searchResult.Metadata.ContainsKey("article_id"))
+                {
+                    resultsWithArticleId++;
+                }
+                else
+                {
+                    resultsWithoutArticleId++;
+                    // Log first few results that are missing article_id
+                    if (resultsWithoutArticleId <= 3)
+                    {
+                        _logger.LogWarning("Result {Id} missing article_id. Available keys: [{Keys}]", 
+                            searchResult.Id, string.Join(", ", searchResult.Metadata.Keys));
+                    }
+                }
+            }
+            
+            _logger.LogInformation("Metadata analysis: {WithArticleId} results have article_id, {WithoutArticleId} results missing article_id", 
+                resultsWithArticleId, resultsWithoutArticleId);
+            
+            // Extract article IDs from metadata
             var articleIds = results
-                .Select(r => int.TryParse(r.Id, out var id) ? (int?)id : null)
-                .Where(id => id.HasValue)
-                .Select(id => id!.Value)
+                .Where(r => r.Metadata.ContainsKey("article_id"))
+                .Select(r => r.Metadata["article_id"])
+                .Where(id => int.TryParse(id, out _))
+                .Select(int.Parse)
                 .ToList();
 
             if (articleIds.Count == 0)
             {
-                _logger.LogWarning("No valid article IDs for recommender scoring");
+                _logger.LogWarning("No valid article IDs found in metadata for recommender scoring. All {TotalResults} results are missing article_id in metadata.", results.Count);
+                _logger.LogWarning("This suggests the Qdrant vector database needs to be re-indexed with metadata. Run HmDataIngest to populate article_id metadata.");
                 return null;
             }
 
@@ -316,11 +374,19 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
                 return null;
             }
 
-            // Convert to dictionary with string keys to match result IDs
-            var scoreDict = result.Scores.ToDictionary(
-                s => s.ArticleId.ToString(), 
-                s => s.Score
-            );
+            // Map scores back to result IDs using article_id metadata
+            var scoreDict = new Dictionary<string, float>();
+            foreach (var scoredArticle in result.Scores)
+            {
+                var matchingResult = results.FirstOrDefault(r => 
+                    r.Metadata.TryGetValue("article_id", out var articleId) && 
+                    articleId == scoredArticle.ArticleId.ToString());
+                
+                if (matchingResult != null)
+                {
+                    scoreDict[matchingResult.Id] = scoredArticle.Score;
+                }
+            }
 
             _logger.LogInformation("Got recommender scores for {Count} products", scoreDict.Count);
             return scoreDict;
