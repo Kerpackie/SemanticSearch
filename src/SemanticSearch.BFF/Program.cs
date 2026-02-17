@@ -5,6 +5,13 @@ AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel with extended timeouts for long-running ML model operations
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(5);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
+});
+
 // Add Aspire service defaults (service discovery, health checks, telemetry)
 builder.AddServiceDefaults();
 
@@ -21,7 +28,7 @@ builder.Services.AddCors(options =>
 });
 
 // Configure gRPC clients for downstream services
-// Nexus - Search orchestration service
+// Nexus - Search orchestration service (with extended timeout for outfit searches)
 builder.Services.AddGrpcClient<SearchOrchestrator.SearchOrchestratorClient>(options =>
 {
     var nexusUrl = builder.Configuration["services:nexus:http:0"] 
@@ -31,7 +38,22 @@ builder.Services.AddGrpcClient<SearchOrchestrator.SearchOrchestratorClient>(opti
 })
 .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
 {
-    EnableMultipleHttp2Connections = true
+    EnableMultipleHttp2Connections = true,
+    // Allow longer connection lifetime for complex operations
+    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(5),
+    KeepAlivePingDelay = TimeSpan.FromSeconds(60),
+    KeepAlivePingTimeout = TimeSpan.FromSeconds(30)
+})
+// Configure longer timeouts for outfit searches which involve multiple sequential operations
+#pragma warning disable EXTEXP0001 // Experimental API - acceptable for PoC
+.AddStandardResilienceHandler(options =>
+{
+    // Set total request timeout to 5 minutes for complex outfit searches
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
+    // Set attempt timeout higher as well
+    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
+    // Circuit breaker sampling duration must be >= 2x attempt timeout
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(7);
 });
 
 // PgApi - Product service (PostgreSQL)
@@ -44,8 +66,19 @@ builder.Services.AddGrpcClient<ProductService.ProductServiceClient>(options =>
 })
 .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
 {
-    EnableMultipleHttp2Connections = true
+    EnableMultipleHttp2Connections = true,
+    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(5),
+    KeepAlivePingDelay = TimeSpan.FromSeconds(60),
+    KeepAlivePingTimeout = TimeSpan.FromSeconds(30)
+})
+.RemoveAllResilienceHandlers()
+.AddStandardResilienceHandler(options =>
+{
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
+    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(2);
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(5);
 });
+#pragma warning restore EXTEXP0001
 
 var app = builder.Build();
 

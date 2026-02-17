@@ -18,6 +18,10 @@ builder.WebHost.ConfigureKestrel(options =>
     {
         listenOptions.Protocols = HttpProtocols.Http2;
     });
+    
+    // Extended timeouts for long-running ML model operations
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(5);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
 });
 
 // Add Aspire service defaults (service discovery, health checks, telemetry)
@@ -31,9 +35,20 @@ builder.Services.AddGrpcHealthChecks();
 var gptApiUrl = builder.Configuration["services:gpt-api:http:0"] 
                 ?? builder.Configuration["services:gpt-api:https:0"]
                 ?? "http://localhost:5107";
+#pragma warning disable EXTEXP0001 // Experimental API - acceptable for PoC
 builder.Services.AddHttpClient("GptApi", client =>
 {
     client.BaseAddress = new Uri(gptApiUrl);
+})
+.ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(5))
+.RemoveAllResilienceHandlers()
+.AddStandardResilienceHandler(options =>
+{
+    // Extended timeouts for LLM inference
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
+    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
+    // Circuit breaker sampling duration must be >= 2x attempt timeout
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(7);
 });
 
 // Configure HTTP client for Recommender service
@@ -43,6 +58,16 @@ var recommenderUrl = builder.Configuration["services:recommender:http:0"]
 builder.Services.AddHttpClient("Recommender", client =>
 {
     client.BaseAddress = new Uri(recommenderUrl);
+})
+.ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(5))
+.RemoveAllResilienceHandlers()
+.AddStandardResilienceHandler(options =>
+{
+    // Extended timeouts for ML recommendations
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
+    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(2);
+    // Circuit breaker sampling duration must be >= 2x attempt timeout
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(5);
 });
 
 // Configure gRPC clients for downstream services
@@ -56,7 +81,17 @@ builder.Services.AddGrpcClient<Embedder.EmbedderClient>(options =>
 })
 .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
 {
-    EnableMultipleHttp2Connections = true
+    EnableMultipleHttp2Connections = true,
+    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(5),
+    KeepAlivePingDelay = TimeSpan.FromSeconds(60),
+    KeepAlivePingTimeout = TimeSpan.FromSeconds(30)
+})
+.RemoveAllResilienceHandlers()
+.AddStandardResilienceHandler(options =>
+{
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
+    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(7);
 });
 
 // Eidolon - Image embedding service (CLIP)
@@ -69,7 +104,17 @@ builder.Services.AddGrpcClient<ClipEmbedder.ClipEmbedderClient>(options =>
 })
 .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
 {
-    EnableMultipleHttp2Connections = true
+    EnableMultipleHttp2Connections = true,
+    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(5),
+    KeepAlivePingDelay = TimeSpan.FromSeconds(60),
+    KeepAlivePingTimeout = TimeSpan.FromSeconds(30)
+})
+.RemoveAllResilienceHandlers()
+.AddStandardResilienceHandler(options =>
+{
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
+    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(7);
 });
 
 // Mneme - Vector database service
@@ -82,7 +127,17 @@ builder.Services.AddGrpcClient<ProductSearch.ProductSearchClient>(options =>
 })
 .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
 {
-    EnableMultipleHttp2Connections = true
+    EnableMultipleHttp2Connections = true,
+    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(5),
+    KeepAlivePingDelay = TimeSpan.FromSeconds(60),
+    KeepAlivePingTimeout = TimeSpan.FromSeconds(30)
+})
+.RemoveAllResilienceHandlers()
+.AddStandardResilienceHandler(options =>
+{
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
+    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(7);
 });
 
 // Arbiter - Reranking service
@@ -95,8 +150,19 @@ builder.Services.AddGrpcClient<Reranker.RerankerClient>(options =>
 })
 .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
 {
-    EnableMultipleHttp2Connections = true
+    EnableMultipleHttp2Connections = true,
+    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(5),
+    KeepAlivePingDelay = TimeSpan.FromSeconds(60),
+    KeepAlivePingTimeout = TimeSpan.FromSeconds(30)
+})
+.RemoveAllResilienceHandlers()
+.AddStandardResilienceHandler(options =>
+{
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
+    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(7);
 });
+#pragma warning restore EXTEXP0001
 
 var app = builder.Build();
 

@@ -454,7 +454,11 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
         RerankResponse? arbiterResponse = null;
         try
         {
-            arbiterResponse = await _arbiterClient.RerankAsync(request, cancellationToken: cancellationToken);
+            // Set a deadline of 2 minutes for the Arbiter call to allow for ML model processing
+            var deadline = DateTime.UtcNow.AddMinutes(2);
+            var callOptions = new CallOptions(deadline: deadline, cancellationToken: cancellationToken);
+            
+            arbiterResponse = await _arbiterClient.RerankAsync(request, callOptions);
             _logger.LogInformation("✅ Arbiter returned {Count} results", arbiterResponse.Results.Count);
             
             if (arbiterResponse.Results.Count > 0)
@@ -471,6 +475,16 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
                     _logger.LogInformation("  Arbiter result: {Id} -> Score: {Score:F4}", r.Id, r.Score);
                 }
             }
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.DeadlineExceeded)
+        {
+            _logger.LogWarning("⚠️ ARBITER CALL TIMED OUT after 30s! Falling back to original scores");
+            return results;
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
+        {
+            _logger.LogWarning("⚠️ ARBITER CALL CANCELLED! Falling back to original scores");
+            return results;
         }
         catch (Exception ex)
         {
@@ -612,7 +626,11 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
         RerankResponse? arbiterResponse = null;
         try
         {
-            arbiterResponse = await _arbiterClient.RerankAsync(request, cancellationToken: cancellationToken);
+            // Set a deadline of 2 minutes for the Arbiter call to allow for ML model processing
+            var deadline = DateTime.UtcNow.AddMinutes(2);
+            var callOptions = new CallOptions(deadline: deadline, cancellationToken: cancellationToken);
+            
+            arbiterResponse = await _arbiterClient.RerankAsync(request, callOptions);
             _logger.LogInformation("✅ Arbiter returned {Count} results for item", arbiterResponse.Results.Count);
             
             if (arbiterResponse.Results.Count > 0)
@@ -623,6 +641,16 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
                 _logger.LogInformation("Item rerank scores - Avg: {Avg:F4}, Max: {Max:F4}, Min: {Min:F4}", 
                     avgScore, maxScore, minScore);
             }
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.DeadlineExceeded)
+        {
+            _logger.LogWarning("⚠️ ARBITER CALL TIMED OUT for item after 30s! Returning top candidates by vector score");
+            return candidates.Take(topK).ToList();
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
+        {
+            _logger.LogWarning("⚠️ ARBITER CALL CANCELLED for item! Returning top candidates by vector score");
+            return candidates.Take(topK).ToList();
         }
         catch (Exception ex)
         {

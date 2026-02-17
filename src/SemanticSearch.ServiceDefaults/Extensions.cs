@@ -28,8 +28,15 @@ public static class Extensions
 
         builder.Services.ConfigureHttpClientDefaults(http =>
         {
-            // Turn on resilience by default
-            http.AddStandardResilienceHandler();
+            // Turn on resilience by default with extended timeouts for ML model operations
+            http.AddStandardResilienceHandler(options =>
+            {
+                // Extended timeouts for long-running ML model operations
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
+                options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
+                // Circuit breaker sampling duration must be >= 2x attempt timeout
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(7);
+            });
 
             // Turn on service discovery by default
             http.AddServiceDiscovery();

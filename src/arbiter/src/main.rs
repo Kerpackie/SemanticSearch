@@ -19,11 +19,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Initializing reranker model and device...");
     println!("Initializing reranker model and device...");
     // Initialize the reranker model.
-    // Using cross-encoder/ms-marco-MiniLM-L-6-v2 - fast and good quality for semantic search reranking.
+    // Default: cross-encoder/ms-marco-MiniLM-L-12-v2 - good quality with better score calibration.
+    // Override via RERANKER_MODEL env var.
     // Alternatives:
-    // - "cross-encoder/ms-marco-MiniLM-L-12-v2" for better quality
-    // - "cross-encoder/ms-marco-TinyBERT-L-2-v2" for faster inference
-    let model = RerankerModel::new("cross-encoder/ms-marco-MiniLM-L-6-v2")?;
+    // - "cross-encoder/ms-marco-MiniLM-L-6-v2" for faster inference
+    // - "cross-encoder/ms-marco-TinyBERT-L-2-v2" for very fast inference
+    let model_id = env::var("RERANKER_MODEL")
+        .unwrap_or_else(|_| "cross-encoder/ms-marco-MiniLM-L-12-v2".to_string());
+    tracing::info!(model_id = %model_id, "Loading reranker model");
+    let model = RerankerModel::new(&model_id)?;
     tracing::info!(
         device = ?model.device.location(),
         "Reranker model loaded successfully"

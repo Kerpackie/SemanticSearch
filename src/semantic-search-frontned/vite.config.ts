@@ -10,6 +10,7 @@ export default defineConfig({
         target: 'http://localhost:5134',
         changeOrigin: true,
         secure: false,
+        timeout: 300000, // 5 minutes for long-running ML model operations
       }
     }
   }

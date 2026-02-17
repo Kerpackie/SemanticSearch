@@ -147,7 +147,7 @@ impl RerankerModel {
         let logits = self.classifier.forward(&cls_output)?; // Shape: [batch_size, 1]
         
         debug!("logits shape: {:?}", logits.shape());
-        
+
         let logits = logits.squeeze(1)?; // Shape: [batch_size]
         
         // Get the raw scores
@@ -156,14 +156,18 @@ impl RerankerModel {
         debug!("Raw logits computed: {:?}", scores);
 
         // Apply sigmoid to convert logits to probabilities (0-1 range)
-        let scores: Vec<f32> = scores.iter().map(|&x| sigmoid(x)).collect();
+        let sigmoid_scores: Vec<f32> = scores.iter().map(|&x| sigmoid(x)).collect();
+
+        // Apply min-max normalization to spread scores across 0.0-1.0 range
+        // This makes scores more interpretable for ranking purposes
+        let scores = normalize_scores(&sigmoid_scores);
 
         info!(
             num_scores = scores.len(),
             min_score = scores.iter().cloned().fold(f32::INFINITY, f32::min),
             max_score = scores.iter().cloned().fold(f32::NEG_INFINITY, f32::max),
             avg_score = scores.iter().sum::<f32>() / scores.len() as f32,
-            "Batch scoring completed"
+            "Batch scoring completed (normalized)"
         );
 
         Ok(scores)
@@ -183,3 +187,24 @@ impl RerankerModel {
 fn sigmoid(x: f32) -> f32 {
     1.0 / (1.0 + (-x).exp())
 }
+
+/// Min-max normalization to spread scores across 0.0-1.0 range.
+/// This makes relative ranking scores more interpretable.
+/// If all scores are identical, returns 0.5 for all.
+fn normalize_scores(scores: &[f32]) -> Vec<f32> {
+    if scores.is_empty() {
+        return vec![];
+    }
+    
+    let min_score = scores.iter().cloned().fold(f32::INFINITY, f32::min);
+    let max_score = scores.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+    let range = max_score - min_score;
+    
+    if range < 1e-9 {
+        // All scores are effectively identical
+        return vec![0.5; scores.len()];
+    }
+    
+    scores.iter().map(|&s| (s - min_score) / range).collect()
+}
+

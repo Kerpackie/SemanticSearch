@@ -87,7 +87,6 @@ _ = builder.AddProject<Projects.SemanticSearch_BFF>("bff")
     .WithReference(nexus)
     .WithReference(pgApi)
     .WaitFor(nexus)
-    .WaitFor(pgApi)
     .WithHttpHealthCheck("/health");
 
 // =============================================================================
@@ -108,14 +107,6 @@ _ = builder.AddProject<Projects.SemanticSearch_BFF>("bff")
 
 var apiService = builder.AddProject<Projects.SemanticSearch_ApiService>("apiservice")
     .WithHttpHealthCheck("/health");
-
-builder.AddProject<Projects.SemanticSearch_Web>("webfrontend")
-    .WithExternalHttpEndpoints()
-    .WithHttpHealthCheck("/health")
-    .WithReference(cache)
-    .WaitFor(cache)
-    .WithReference(apiService)
-    .WaitFor(apiService);
 
 
 builder.Build().Run();
