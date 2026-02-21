@@ -46,6 +46,8 @@ function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(TEST_USERS[0]); // Start with Guest
   const [viewMode, setViewMode] = useState<'grid' | 'outfit'>('grid');
   const [outfitSlots, setOutfitSlots] = useState<OutfitSlots | null>(null);
+  const [outfitName, setOutfitName] = useState<string | undefined>();
+  const [styleDescription, setStyleDescription] = useState<string | undefined>();
   const pageSize = 24;
 
   // Load categories on mount
@@ -89,6 +91,8 @@ function App() {
           // Use outfit search endpoint
           const response = await outfitSearch(query, customerId);
           setOutfitSlots(response.slots);
+          setOutfitName(response.outfitName);
+          setStyleDescription(response.styleDescription);
           setProcessedQuery(response.processedQuery);
           setTotalCount(response.totalResults);
           setProducts([]); // Clear grid products
@@ -186,6 +190,8 @@ function App() {
                           setTotalCount(response.totalResults);
                           setProcessedQuery(response.processedQuery);
                           setOutfitSlots(null);
+                          setOutfitName(undefined);
+                          setStyleDescription(undefined);
                         } catch (err) {
                           setError('Search failed. Make sure the BFF server is running.');
                           console.error(err);
@@ -209,6 +215,8 @@ function App() {
                           const customerId = currentUser?.id || undefined;
                           const response = await outfitSearch(searchQuery, customerId);
                           setOutfitSlots(response.slots);
+                          setOutfitName(response.outfitName);
+                          setStyleDescription(response.styleDescription);
                           setProcessedQuery(response.processedQuery);
                           setTotalCount(response.totalResults);
                           setProducts([]);
@@ -258,6 +266,8 @@ function App() {
               <OutfitBuilder 
                 slots={outfitSlots}
                 loading={false}
+                outfitName={outfitName}
+                styleDescription={styleDescription}
                 onProductClick={() => {}}
               />
             ) : (

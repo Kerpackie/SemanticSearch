@@ -329,7 +329,9 @@ app.MapPost("/api/outfit-search", async (OutfitSearchRequest request, SearchOrch
         var response = new OutfitSearchResponse(
             slots,
             grpcResponse.TotalResults,
-            grpcResponse.ProcessedQuery
+            grpcResponse.ProcessedQuery,
+            string.IsNullOrEmpty(grpcResponse.OutfitName) ? null : grpcResponse.OutfitName,
+            string.IsNullOrEmpty(grpcResponse.StyleDescription) ? null : grpcResponse.StyleDescription
         );
         
         logger.LogInformation("=== OUTFIT SEARCH COMPLETED === Total slots: {SlotCount}", slots.Count);
@@ -672,7 +674,9 @@ record OutfitSearchRequest(string Query, string? CustomerId = null);
 record OutfitSearchResponse(
     Dictionary<string, SlotData> Slots,
     int TotalResults,
-    string ProcessedQuery);
+    string ProcessedQuery,
+    string? OutfitName,
+    string? StyleDescription);
 
 record SlotData(
     string SlotType,

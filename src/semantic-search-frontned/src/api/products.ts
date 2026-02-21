@@ -51,50 +51,22 @@ export async function semanticSearch(query: string, limit?: number, customerId?:
 }
 
 export async function outfitSearch(query: string, customerId?: string): Promise<OutfitSearchResponse> {
-  console.log('[API] outfitSearch called with:', { query, customerId });
-  
-  const body: any = { query };
+  const body: Record<string, string> = { query };
   if (customerId) {
     body.customerId = customerId;
   }
-  
-  console.log('[API] Request body:', body);
-  console.log('[API] Sending POST to:', `${API_BASE}/outfit-search`);
-  
+
   const response = await fetch(`${API_BASE}/outfit-search`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  
-  console.log('[API] Response status:', response.status);
-  console.log('[API] Response ok:', response.ok);
-  
+
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[API] Error response:', errorText);
     throw new Error('Outfit search failed: ' + errorText);
   }
-  
-  const data = await response.json();
-  console.log('[API] Response data:', data);
-  console.log('[API] Response data.slots type:', typeof data.slots);
-  console.log('[API] Response data.slots keys:', Object.keys(data.slots || {}));
-  
-  // Log each slot's details
-  if (data.slots) {
-    Object.entries(data.slots).forEach(([slotName, slotData]: [string, any]) => {
-      console.log(`[API] Slot "${slotName}":`, {
-        slotType: slotData.slotType,
-        recommendationsCount: slotData.recommendations?.length || 0,
-        reasoning: slotData.reasoning
-      });
-      if (slotData.recommendations && slotData.recommendations.length > 0) {
-        console.log(`[API]   First recommendation:`, slotData.recommendations[0]);
-      }
-    });
-  }
-  
-  return data;
+
+  return response.json();
 }
 

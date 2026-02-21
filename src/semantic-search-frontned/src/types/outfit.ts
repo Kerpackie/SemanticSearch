@@ -36,4 +36,6 @@ export interface OutfitSearchResponse {
   slots: OutfitSlots;
   totalResults: number;
   processedQuery: string;
+  outfitName?: string;       // GPT-generated outfit name e.g. "Casual Summer Look"
+  styleDescription?: string; // GPT-generated style rationale
 }

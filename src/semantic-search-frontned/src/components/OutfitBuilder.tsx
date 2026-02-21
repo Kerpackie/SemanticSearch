@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { Sparkles, Lightbulb } from 'lucide-react';
 import { OutfitSlot } from './OutfitSlot';
+import { OutfitExplanation } from './OutfitExplanation';
 import type { OutfitSlots, SlotType } from '../types/outfit';
 import './OutfitBuilder.css';
 
 interface OutfitBuilderProps {
   slots: OutfitSlots;
   loading?: boolean;
+  outfitName?: string;
+  styleDescription?: string;
   onProductClick?: (productId: string, slotType: SlotType) => void;
 }
 
-export function OutfitBuilder({ slots, loading, onProductClick }: OutfitBuilderProps) {
+export function OutfitBuilder({ slots, loading, outfitName, styleDescription, onProductClick }: OutfitBuilderProps) {
   const [selectedSlot, setSelectedSlot] = useState<SlotType | null>(null);
 
   // Organize slots in a specific order for the outfit builder
@@ -57,6 +60,13 @@ export function OutfitBuilder({ slots, loading, onProductClick }: OutfitBuilderP
           Scroll through each to find your perfect match!
         </p>
       </div>
+
+      {outfitName && styleDescription && (
+        <OutfitExplanation
+          outfitName={outfitName}
+          styleDescription={styleDescription}
+        />
+      )}
 
       <div className="outfit-slots-container">
         {availableSlots.map((slotType) => (

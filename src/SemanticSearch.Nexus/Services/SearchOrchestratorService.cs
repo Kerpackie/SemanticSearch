@@ -198,7 +198,9 @@ public class SearchOrchestratorService : SearchOrchestrator.SearchOrchestratorBa
         {
             ProcessedQuery = processedQuery,
             TotalResults = finalResults.Count,
-            Results = { finalResults }
+            Results = { finalResults },
+            OutfitName = outfit.OutfitName ?? "",
+            StyleDescription = outfit.StyleDescription ?? ""
         };
     }
 

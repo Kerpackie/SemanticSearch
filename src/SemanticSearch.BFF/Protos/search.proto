@@ -42,6 +42,8 @@ message SearchResponse {
   repeated SearchResult results = 1;
   string processed_query = 2;
   int32 total_results = 3;
+  string outfit_name = 4;         // The GPT-suggested outfit name
+  string style_description = 5;   // The GPT-generated style description / rationale
 }
 
 message SearchResult {
