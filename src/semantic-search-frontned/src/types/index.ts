@@ -41,10 +41,13 @@ export interface SearchResponse {
 }
 
 // Helper to generate image URL from article ID
-// Images should be placed in public/images/{article_id}.jpg
+// H&M dataset stores images in subdirectories based on the first 3 digits of the article ID
+// e.g. article 0108775015 → /images/010/0108775015.jpg
 export function getProductImageUrl(articleId: string): string {
-  return `/images/${articleId}.jpg`;
+  const prefix = articleId.substring(0, 3);
+  return `/images/${prefix}/${articleId}.jpg`;
 }
 
-// Fallback placeholder image
-export const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/400x500?text=No+Image';
+// Fallback placeholder image (inline SVG – no external dependency)
+export const PLACEHOLDER_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'%3E%3Crect width='400' height='500' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E";

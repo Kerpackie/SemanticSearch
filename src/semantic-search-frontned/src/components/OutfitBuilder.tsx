@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Sparkles, Lightbulb } from 'lucide-react';
 import { OutfitSlot } from './OutfitSlot';
 import type { OutfitSlots, SlotType } from '../types/outfit';
 import './OutfitBuilder.css';
@@ -11,12 +12,6 @@ interface OutfitBuilderProps {
 
 export function OutfitBuilder({ slots, loading, onProductClick }: OutfitBuilderProps) {
   const [selectedSlot, setSelectedSlot] = useState<SlotType | null>(null);
-
-  console.log('[OutfitBuilder] Rendering with:', {
-    slotsProvided: !!slots,
-    slotKeys: slots ? Object.keys(slots) : [],
-    loading
-  });
 
   // Organize slots in a specific order for the outfit builder
   const slotOrder: SlotType[] = [
@@ -33,14 +28,11 @@ export function OutfitBuilder({ slots, loading, onProductClick }: OutfitBuilderP
     slots[slotType] && slots[slotType].recommendations && slots[slotType].recommendations.length > 0
   ) : [];
 
-  console.log('[OutfitBuilder] Available slots:', availableSlots);
-  console.log('[OutfitBuilder] Available slot count:', availableSlots.length);
-
   if (loading) {
     return (
       <div className="outfit-builder-loading">
         <div className="loading-spinner"></div>
-        <p>Building your personalized outfit...</p>
+        <p>Building your personalised outfit...</p>
       </div>
     );
   }
@@ -57,10 +49,11 @@ export function OutfitBuilder({ slots, loading, onProductClick }: OutfitBuilderP
     <div className="outfit-builder">
       <div className="outfit-builder-header">
         <h2 className="outfit-builder-title">
-          🎨 Your Personalized Outfit
+          <Sparkles size={22} strokeWidth={1.75} className="outfit-builder-title-icon" />
+          Your Personalised Outfit
         </h2>
         <p className="outfit-builder-subtitle">
-          We've categorized {availableSlots.length} style {availableSlots.length === 1 ? 'slot' : 'slots'} for you. 
+          We've categorised {availableSlots.length} style {availableSlots.length === 1 ? 'slot' : 'slots'} for you.
           Scroll through each to find your perfect match!
         </p>
       </div>
@@ -79,8 +72,9 @@ export function OutfitBuilder({ slots, loading, onProductClick }: OutfitBuilderP
       </div>
 
       <div className="outfit-builder-footer">
+        <Lightbulb size={16} strokeWidth={1.75} className="outfit-builder-hint-icon" />
         <p className="outfit-builder-hint">
-          💡 <strong>Tip:</strong> Each slot shows the top 10 re-ranked items based on your preferences and the search query.
+          <strong>Tip:</strong> Each slot shows the top 10 re-ranked items based on your preferences and the search query.
         </p>
       </div>
     </div>

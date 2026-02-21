@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { LayoutGrid, Shirt, AlertTriangle, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { Header } from './components/Header';
 import { SearchBar } from './components/SearchBar';
 import { CategoryFilter } from './components/CategoryFilter';
@@ -144,7 +145,8 @@ function App() {
                 Find the perfect outfit with our intelligent semantic search
                 {currentUser?.id && (
                   <span className="personalization-badge">
-                    ✨ Personalized for {currentUser.name}
+                    <Sparkles size={12} strokeWidth={2} />
+                    Personalised for {currentUser.name}
                   </span>
                 )}
               </p>
@@ -193,62 +195,34 @@ function App() {
                       }
                     }}
                   >
-                    📋 Grid View
+                    <LayoutGrid size={15} strokeWidth={2} />
+                    Grid View
                   </button>
                   <button 
                     className={`toggle-btn ${viewMode === 'outfit' ? 'active' : ''}`}
                     onClick={async () => {
                       if (viewMode !== 'outfit') {
-                        console.log('🎨 [OUTFIT BUILDER] Button clicked!');
-                        console.log('🎨 [OUTFIT BUILDER] Current viewMode:', viewMode);
-                        console.log('🎨 [OUTFIT BUILDER] Search query:', searchQuery);
-                        console.log('🎨 [OUTFIT BUILDER] Customer ID:', currentUser?.id);
-                        
                         setViewMode('outfit');
                         setLoading(true);
                         setError(null);
-                        
                         try {
                           const customerId = currentUser?.id || undefined;
-                          console.log('🎨 [OUTFIT BUILDER] Calling outfitSearch API...');
-                          console.log('🎨 [OUTFIT BUILDER] Request params:', { query: searchQuery, customerId });
-                          
                           const response = await outfitSearch(searchQuery, customerId);
-                          
-                          console.log('🎨 [OUTFIT BUILDER] API Response received:');
-                          console.log('🎨 [OUTFIT BUILDER] - Total results:', response.totalResults);
-                          console.log('🎨 [OUTFIT BUILDER] - Processed query:', response.processedQuery);
-                          console.log('🎨 [OUTFIT BUILDER] - Slots:', response.slots);
-                          console.log('🎨 [OUTFIT BUILDER] - Number of slots:', Object.keys(response.slots).length);
-                          
-                          if (Object.keys(response.slots).length === 0) {
-                            console.warn('⚠️ [OUTFIT BUILDER] WARNING: No slots returned!');
-                          } else {
-                            Object.entries(response.slots).forEach(([slotName, slotData]) => {
-                              console.log(`🎨 [OUTFIT BUILDER]   - ${slotName}: ${slotData.recommendations.length} items`);
-                            });
-                          }
-                          
                           setOutfitSlots(response.slots);
                           setProcessedQuery(response.processedQuery);
                           setTotalCount(response.totalResults);
                           setProducts([]);
-                          
-                          console.log('🎨 [OUTFIT BUILDER] State updated successfully');
                         } catch (err) {
-                          console.error('❌ [OUTFIT BUILDER] Error:', err);
                           setError('Outfit search failed. Make sure the BFF server is running.');
                           console.error(err);
                         } finally {
                           setLoading(false);
-                          console.log('🎨 [OUTFIT BUILDER] Loading complete');
                         }
-                      } else {
-                        console.log('🎨 [OUTFIT BUILDER] Already in outfit mode, skipping');
                       }
                     }}
                   >
-                    👔 Outfit Builder
+                    <Shirt size={15} strokeWidth={2} />
+                    Outfit Builder
                   </button>
                 </div>
               )}
@@ -269,49 +243,28 @@ function App() {
 
           {error && (
             <div className="error-banner">
-              <span>⚠️</span>
+              <AlertTriangle size={16} strokeWidth={2} />
               {error}
             </div>
           )}
           
           {viewMode === 'outfit' && searchQuery ? (
-            (() => {
-              console.log('[App] Outfit mode rendering decision:', {
-                viewMode,
-                searchQuery,
-                loading,
-                outfitSlots,
-                outfitSlotsKeys: outfitSlots ? Object.keys(outfitSlots) : null
-              });
-              
-              if (loading) {
-                console.log('[App] -> Showing loading state');
-                return (
-                  <div className="outfit-builder-loading">
-                    <div className="loading-spinner"></div>
-                    <p>Building your personalized outfit...</p>
-                  </div>
-                );
-              } else if (outfitSlots && Object.keys(outfitSlots).length > 0) {
-                console.log('[App] -> Rendering OutfitBuilder with slots');
-                return (
-                  <OutfitBuilder 
-                    slots={outfitSlots}
-                    loading={false}
-                    onProductClick={(productId) => {
-                      console.log('Product clicked:', productId);
-                    }}
-                  />
-                );
-              } else {
-                console.log('[App] -> Showing empty state');
-                return (
-                  <div className="outfit-builder-empty">
-                    <p>No outfit recommendations found. Try a different search query.</p>
-                  </div>
-                );
-              }
-            })()
+            loading ? (
+              <div className="outfit-builder-loading">
+                <div className="loading-spinner"></div>
+                <p>Building your personalised outfit...</p>
+              </div>
+            ) : outfitSlots && Object.keys(outfitSlots).length > 0 ? (
+              <OutfitBuilder 
+                slots={outfitSlots}
+                loading={false}
+                onProductClick={() => {}}
+              />
+            ) : (
+              <div className="outfit-builder-empty">
+                <p>No outfit recommendations found. Try a different search query.</p>
+              </div>
+            )
           ) : (
             <>
               <ProductGrid 
@@ -328,7 +281,8 @@ function App() {
                     disabled={page === 1}
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                   >
-                    ← Previous
+                    <ChevronLeft size={16} strokeWidth={2} />
+                    Previous
                   </button>
                   <span className="pagination-info">
                     Page {page} of {totalPages}
@@ -338,7 +292,8 @@ function App() {
                     disabled={page === totalPages}
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   >
-                    Next →
+                    Next
+                    <ChevronRight size={16} strokeWidth={2} />
                   </button>
                 </div>
               )}

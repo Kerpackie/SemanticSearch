@@ -15,8 +15,9 @@
 .search-icon {
   position: absolute;
   left: 16px;
-  font-size: 1rem;
+  color: #999;
   pointer-events: none;
+  flex-shrink: 0;
 }
 
 .search-input {
@@ -46,14 +47,16 @@
   border: none;
   color: #999;
   cursor: pointer;
-  padding: 4px 8px;
-  font-size: 0.875rem;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 4px;
   transition: color 0.2s ease, background 0.2s ease;
 }
 
 .clear-button:hover {
-  color: #666;
+  color: #555;
   background: #f0f0f0;
 }
 

@@ -45,7 +45,9 @@
 }
 
 .personalization-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   margin-left: 0.75rem;
   padding: 0.25rem 0.75rem;
   background: rgba(255, 255, 255, 0.25);
@@ -110,6 +112,9 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .toggle-btn:hover {
@@ -179,6 +184,9 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .pagination-button:hover:not(:disabled) {

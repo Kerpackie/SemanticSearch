@@ -22,7 +22,15 @@
 }
 
 .user-avatar {
-  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #667eea;
+  flex-shrink: 0;
 }
 
 .user-name {
@@ -31,8 +39,13 @@
 
 .dropdown-arrow {
   color: #9ca3af;
-  font-size: 0.75rem;
   margin-left: 0.25rem;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
 }
 
 .dropdown-backdrop {
@@ -91,5 +104,5 @@
 
 .check-mark {
   color: #3b82f6;
-  font-weight: bold;
+  flex-shrink: 0;
 }

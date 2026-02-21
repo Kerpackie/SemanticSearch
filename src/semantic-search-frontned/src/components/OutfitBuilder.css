@@ -19,6 +19,16 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.outfit-builder-title-icon {
+  flex-shrink: 0;
+  color: #764ba2;
+  -webkit-text-fill-color: initial;
 }
 
 .outfit-builder-subtitle {
@@ -68,7 +78,16 @@
   margin-top: 3rem;
   padding-top: 2rem;
   border-top: 2px solid #f0f0f0;
-  text-align: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.outfit-builder-hint-icon {
+  color: #667eea;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .outfit-builder-hint {
@@ -81,7 +100,7 @@
   .outfit-builder-title {
     font-size: 2rem;
   }
-  
+
   .outfit-builder-subtitle {
     font-size: 1rem;
   }

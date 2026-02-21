@@ -1,5 +1,7 @@
+import { Shirt, Footprints, Gem, ChevronDown, Wind, Waves, ShoppingBag } from 'lucide-react';
 import { SlotCarousel } from './SlotCarousel';
 import type { SlotData, SlotType } from '../types/outfit';
+import { getProductImageUrl, PLACEHOLDER_IMAGE } from '../types';
 import './OutfitSlot.css';
 
 interface OutfitSlotProps {
@@ -10,59 +12,38 @@ interface OutfitSlotProps {
   onProductClick?: (productId: string) => void;
 }
 
-const SLOT_INFO: Record<SlotType, { icon: string; title: string; description: string }> = {
-  upper_body: {
-    icon: '👕',
-    title: 'Upper Body',
-    description: 'Tops, shirts, jackets, and sweaters'
-  },
-  lower_body: {
-    icon: '👖',
-    title: 'Lower Body',
-    description: 'Pants, jeans, skirts, and shorts'
-  },
-  full_body: {
-    icon: '👗',
-    title: 'Full Body',
-    description: 'Dresses, jumpsuits, and full outfits'
-  },
-  shoes: {
-    icon: '👟',
-    title: 'Footwear',
-    description: 'Shoes, boots, sneakers, and sandals'
-  },
-  accessories: {
-    icon: '👜',
-    title: 'Accessories',
-    description: 'Bags, belts, jewelry, and more'
-  },
-  underwear: {
-    icon: '🩲',
-    title: 'Underwear',
-    description: 'Undergarments and intimate wear'
-  },
-  swimwear: {
-    icon: '🩱',
-    title: 'Swimwear',
-    description: 'Swimsuits, bikinis, and beachwear'
-  }
+type SlotIconRecord = Record<SlotType, React.ReactNode>;
+
+const SLOT_ICONS: SlotIconRecord = {
+  upper_body: <Shirt size={22} strokeWidth={1.75} />,
+  lower_body: <Wind size={22} strokeWidth={1.75} />,
+  full_body: <ShoppingBag size={22} strokeWidth={1.75} />,
+  shoes: <Footprints size={22} strokeWidth={1.75} />,
+  accessories: <Gem size={22} strokeWidth={1.75} />,
+  underwear: <Wind size={22} strokeWidth={1.75} />,
+  swimwear: <Waves size={22} strokeWidth={1.75} />,
+};
+
+const SLOT_INFO: Record<SlotType, { title: string; description: string }> = {
+  upper_body: { title: 'Upper Body', description: 'Tops, shirts, jackets & sweaters' },
+  lower_body: { title: 'Lower Body', description: 'Pants, jeans, skirts & shorts' },
+  full_body:  { title: 'Full Body',  description: 'Dresses, jumpsuits & full outfits' },
+  shoes:      { title: 'Footwear',   description: 'Shoes, boots, sneakers & sandals' },
+  accessories:{ title: 'Accessories',description: 'Bags, belts, jewellery & more' },
+  underwear:  { title: 'Underwear',  description: 'Undergarments & intimate wear' },
+  swimwear:   { title: 'Swimwear',   description: 'Swimsuits, bikinis & beachwear' },
 };
 
 export function OutfitSlot({ slotType, slotData, isExpanded, onToggle, onProductClick }: OutfitSlotProps) {
   const info = SLOT_INFO[slotType];
+  const icon = SLOT_ICONS[slotType];
   const itemCount = slotData.recommendations.length;
-
-  console.log(`[OutfitSlot] ${slotType}:`, {
-    itemCount,
-    isExpanded,
-    recommendations: slotData.recommendations
-  });
 
   return (
     <div className={`outfit-slot ${isExpanded ? 'expanded' : 'collapsed'}`}>
       <div className="slot-header" onClick={onToggle}>
         <div className="slot-header-left">
-          <span className="slot-icon">{info.icon}</span>
+          <span className="slot-icon">{icon}</span>
           <div className="slot-info">
             <h3 className="slot-title">{info.title}</h3>
             <p className="slot-description">{info.description}</p>
@@ -70,7 +51,11 @@ export function OutfitSlot({ slotType, slotData, isExpanded, onToggle, onProduct
         </div>
         <div className="slot-header-right">
           <span className="slot-count">{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
-          <span className={`slot-toggle-icon ${isExpanded ? 'expanded' : ''}`}>▼</span>
+          <ChevronDown
+            size={18}
+            strokeWidth={2}
+            className={`slot-toggle-icon ${isExpanded ? 'expanded' : ''}`}
+          />
         </div>
       </div>
 
@@ -94,10 +79,10 @@ export function OutfitSlot({ slotType, slotData, isExpanded, onToggle, onProduct
             {slotData.recommendations.slice(0, 4).map((rec, idx) => (
               <div key={rec.id} className="slot-preview-image" style={{ zIndex: 4 - idx }}>
                 <img 
-                  src={`/images/${rec.id}.jpg`} 
+                  src={getProductImageUrl(rec.id)}
                   alt={rec.name}
                   onError={(e) => {
-                    e.currentTarget.src = 'https://via.placeholder.com/100x120?text=No+Image';
+                    e.currentTarget.src = PLACEHOLDER_IMAGE;
                   }}
                 />
               </div>

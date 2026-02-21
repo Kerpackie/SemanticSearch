@@ -1,4 +1,6 @@
+import { Lightbulb, Palette, Tag } from 'lucide-react';
 import type { Recommendation } from '../types/outfit';
+import { getProductImageUrl, PLACEHOLDER_IMAGE } from '../types';
 import './RecommendationCard.css';
 
 interface RecommendationCardProps {
@@ -19,11 +21,11 @@ export function RecommendationCard({ recommendation, rank, onClick }: Recommenda
 
       <div className="recommendation-image-container">
         <img 
-          src={`/images/${id}.jpg`}
+          src={getProductImageUrl(id)}
           alt={name}
           className="recommendation-image"
           onError={(e) => {
-            e.currentTarget.src = 'https://via.placeholder.com/300x360?text=No+Image';
+            e.currentTarget.src = PLACEHOLDER_IMAGE;
           }}
         />
       </div>
@@ -37,7 +39,7 @@ export function RecommendationCard({ recommendation, rank, onClick }: Recommenda
         {reasoning && (
           <div className="recommendation-reasoning">
             <div className="reasoning-header">
-              <span className="reasoning-icon">💡</span>
+              <Lightbulb size={14} strokeWidth={2} className="reasoning-icon" />
               <strong>Why this?</strong>
             </div>
             <p className="reasoning-text">{reasoning}</p>
@@ -48,13 +50,13 @@ export function RecommendationCard({ recommendation, rank, onClick }: Recommenda
           <div className="recommendation-metadata">
             {metadata.colour && (
               <span className="metadata-tag">
-                <span className="tag-icon">🎨</span>
+                <Palette size={12} strokeWidth={2} className="tag-icon" />
                 {metadata.colour}
               </span>
             )}
             {metadata.productType && (
               <span className="metadata-tag">
-                <span className="tag-icon">📦</span>
+                <Tag size={12} strokeWidth={2} className="tag-icon" />
                 {metadata.productType}
               </span>
             )}

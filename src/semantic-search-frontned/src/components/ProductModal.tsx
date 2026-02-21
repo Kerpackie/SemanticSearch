@@ -1,3 +1,4 @@
+import { X, Heart, ShoppingCart } from 'lucide-react';
 import {type Product, getProductImageUrl, PLACEHOLDER_IMAGE } from '../types';
 import './ProductModal.css';
 import { useState } from 'react';
@@ -17,7 +18,7 @@ export function ProductModal({ product, onClose }: ProductModalProps) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>✕</button>
+        <button className="modal-close" onClick={onClose} aria-label="Close"><X size={20} strokeWidth={2} /></button>
         
         <div className="modal-body">
           <div className="modal-image-section">
@@ -68,8 +69,13 @@ export function ProductModal({ product, onClose }: ProductModalProps) {
             </div>
             
             <div className="modal-actions">
-              <button className="add-to-cart-button">Add to Cart</button>
-              <button className="wishlist-button">❤️</button>
+              <button className="add-to-cart-button">
+                <ShoppingCart size={18} strokeWidth={2} />
+                Add to Cart
+              </button>
+              <button className="wishlist-button" aria-label="Add to wishlist">
+                <Heart size={18} strokeWidth={1.75} />
+              </button>
             </div>
           </div>
         </div>

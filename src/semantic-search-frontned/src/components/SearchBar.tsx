@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { Search, X } from 'lucide-react';
 import './SearchBar.css';
 
 interface SearchBarProps {
@@ -22,7 +23,7 @@ export function SearchBar({ onSearch, placeholder = "Search for products..." }: 
   return (
     <form className="search-bar" onSubmit={handleSubmit}>
       <div className="search-input-container">
-        <span className="search-icon">🔍</span>
+        <Search className="search-icon" size={18} strokeWidth={2} />
         <input
           type="text"
           className="search-input"
@@ -31,8 +32,8 @@ export function SearchBar({ onSearch, placeholder = "Search for products..." }: 
           placeholder={placeholder}
         />
         {query && (
-          <button type="button" className="clear-button" onClick={handleClear}>
-            ✕
+          <button type="button" className="clear-button" onClick={handleClear} aria-label="Clear search">
+            <X size={16} strokeWidth={2} />
           </button>
         )}
       </div>
